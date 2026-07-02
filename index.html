@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<!-- viewport-fit=cover populates env(safe-area-inset-*); the game container then
+     insets itself out of the Dynamic Island / camera (see .clubhouse) with the
+     pine bg filling the gap. Works on Safari/Chrome/Brave (Brave defaults to
+     full-bleed without an explicit inset, hence the explicit safe-area inset). -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>The Driving Range — Blue Collar Country Club</title>
+<!-- iOS: "Add to Home Screen" runs
+     chrome-free fullscreen. status bar translucent over the pine scene. -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Driving Range" />
+<meta name="theme-color" content="#182d20" />
+<link rel="apple-touch-icon" href="assets/art/crest.png" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<!-- Phase 1 substitutes Pinyon Script / Cormorant Garamond; swap for the licensed
+     Spencerian + serif faces in public/assets/fonts (assets/README.md). -->
+<link href="https://fonts.googleapis.com/css2?family=Pinyon+Script&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <!-- portrait phones: nudge to landscape (the range is a 1.48:1 landscape view) -->
+  <div class="rotate-hint" aria-hidden="true">
+    <div class="rot-ico">📱</div>
+    <div class="rot-title">Rotate your device</div>
+    <div class="rot-sub">The&nbsp;Driving&nbsp;Range<br>plays&nbsp;in&nbsp;landscape</div>
+  </div>
+  <div class="clubhouse">
+    <div class="topbar">
+      <div class="brand">
+        <span class="brand-logo" role="img" aria-label="Troll Co."></span>
+        <span class="brand-sub">Driving&nbsp;Range</span>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="label">Ball</div><div class="val" id="ballNo">1<span class="yd">/3</span></div></div>
+        <div class="stat"><div class="label">Best</div><div class="val" id="best">0<span class="yd">yd</span></div></div>
+      </div>
+    </div>
+
+    <!-- Pixi mounts its canvas into #stage. .grain + .overlay sit above it. -->
+    <div class="stage" id="stage">
+      <div class="grain"></div>
+      <!-- visual "tap here" cue during the tap phases; pointer-events:none so the
+           tap still falls through to the canvas (you can tap anywhere) -->
+      <div class="tap-cue" id="tapCue" aria-hidden="true"><span>Tap</span></div>
+      <div class="overlay" id="overlay"></div>
+    </div>
+
+    <div class="footer">
+      <span class="tag" id="footTag">No Suits, No Ties, Only Good Times</span>
+      <button class="sound" id="soundBtn" aria-label="Sound off" title="Sound"></button>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

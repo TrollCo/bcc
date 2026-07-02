@@ -1,0 +1,22 @@
+{
+  "name": "bccc-driving-range",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Blue Collar Country Club — The Driving Range. PixiJS rebuild of the validated prototype (Phase 1).",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "howler": "^2.2.4",
+    "pixi.js": "^8.6.0"
+  },
+  "devDependencies": {
+    "@types/howler": "^2.2.12",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.7"
+  }
+}

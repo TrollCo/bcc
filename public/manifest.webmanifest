@@ -1,0 +1,15 @@
+{
+  "name": "The Driving Range — Blue Collar Country Club",
+  "short_name": "Driving Range",
+  "description": "Blue Collar Country Club — The Driving Range",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "landscape",
+  "background_color": "#182d20",
+  "theme_color": "#182d20",
+  "start_url": "./",
+  "scope": "./",
+  "icons": [
+    { "src": "assets/art/crest.png", "sizes": "160x173", "type": "image/png", "purpose": "any" }
+  ]
+}
