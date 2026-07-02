@@ -1,0 +1,305 @@
+/* Ported verbatim from the prototype <style> (reference/bccc-driving-range.html).
+   Brand frame, overlays, and membership card live in the DOM; the game scene is
+   the Pixi <canvas> mounted inside .stage. */
+:root{
+  --pine:#23402f;
+  --pine-deep:#182d20;
+  --pine-line:#2f5440;
+  --bone:#ece3cf;
+  --bone-dim:#cfc6ad;
+  --sage:#93a384;
+  --sage-deep:#6f7e62;
+  --ink:#14160f;
+  --gold:#b8985a;
+  --gold-bright:#d8b878;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+/* paint the document root pine so NOTHING white/bone shows behind the safe area
+   (iOS landscape notch/Island insets) or anywhere the content doesn't cover */
+html{height:100%;background:#182d20;}
+body{height:100%;
+  background:radial-gradient(ellipse at 50% 0%, #20392a 0%, var(--pine-deep) 70%);
+  color:var(--bone);
+  font-family:'Cormorant Garamond',Georgia,serif;
+  display:flex;align-items:center;justify-content:center;
+  min-height:100vh;padding:14px;overflow:hidden;
+  -webkit-user-select:none;user-select:none;
+}
+.clubhouse{
+  width:100%;max-width:680px;
+  background:linear-gradient(180deg,#274632,#1b3124);
+  border:1px solid var(--pine-line);
+  border-radius:6px;
+  padding:14px;
+  box-shadow:0 30px 90px rgba(0,0,0,.6), 0 0 0 1px rgba(0,0,0,.4) inset;
+  position:relative;
+  /* size container: header + splash scale to the PANEL width (cqw), not the
+     viewport — so element proportions match the mockup at any embed size */
+  container-type:inline-size;
+}
+/* engraved double border */
+.clubhouse::before{
+  content:"";position:absolute;inset:7px;border:1px solid rgba(236,227,207,.18);
+  border-radius:3px;pointer-events:none;
+}
+.topbar{
+  display:flex;align-items:flex-end;justify-content:space-between;
+  padding:6px 10px 12px;gap:10px;
+}
+.brand{line-height:1;}
+/* TROLL〔anvil〕CO header wordmark — rendered as a recolorable MASK of the brand
+   PNG so it can flip color vs. the background (bone on dark, pine on light sky).
+   --logo-mask is set from JS with import.meta.env.BASE_URL (main.ts) so the mask
+   survives subpath deploys (vite base './'); absolute /assets/ URLs would not. */
+.brand-logo{display:block;width:clamp(110px,22cqw,150px);aspect-ratio:283/38;background:var(--bone);
+  -webkit-mask:var(--logo-mask) left center/contain no-repeat;
+  mask:var(--logo-mask) left center/contain no-repeat;}
+.brand-sub{
+  display:block;font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;
+  font-size:clamp(9px,1.65cqw,13px);letter-spacing:.46em;
+  color:var(--bone-dim);text-transform:uppercase;margin-top:5px;padding-left:3px;
+}
+.stats{display:flex;gap:16px;text-align:right;}
+.stat .label{font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--sage-deep);}
+.stat .val{font-size:22px;font-weight:600;color:var(--bone);font-variant-numeric:tabular-nums;line-height:1;}
+.stat .val .yd{font-size:12px;color:var(--sage);}
+.stage{position:relative;border-radius:4px;overflow:hidden;border:1px solid var(--ink);background:#cfc6ad;}
+/* !important beats Pixi autoDensity's inline width/height so the canvas scales
+   down on narrow (mobile) viewports instead of overflowing + getting clipped */
+.stage canvas{display:block;width:100%!important;height:auto!important;touch-action:none;cursor:pointer;}
+.grain{position:absolute;inset:0;pointer-events:none;opacity:.06;mix-blend-mode:multiply;z-index:4;
+  background-image:repeating-linear-gradient(0deg,#000 0 1px,transparent 1px 2px);}
+.overlay{
+  position:absolute;inset:0;z-index:5;
+  display:flex;flex-direction:column;
+  overflow-y:auto;-webkit-overflow-scrolling:touch;
+  background:linear-gradient(180deg,rgba(24,45,32,.92),rgba(20,38,27,.95));
+}
+.overlay.hidden{display:none;}
+/* margin:auto centers when shorter than the overlay, and lets it SCROLL when
+   taller (the scorecard on a short landscape phone) instead of clipping. */
+.ov-inner{margin:auto;display:flex;flex-direction:column;align-items:center;text-align:center;
+  width:100%;padding:22px;}
+/* crest ~13% of panel width; lockup ~36% — matched to the mockup */
+.crest{width:clamp(74px,13.5cqw,104px);height:auto;margin-bottom:3.5cqw;}
+.ov-lockup{display:block;width:clamp(180px,36cqw,260px);height:auto;margin:0 auto;}
+.ov-script{font-family:'Pinyon Script',cursive;font-size:clamp(40px,10vw,62px);color:var(--bone);line-height:.85;}
+.ov-caps{font-size:clamp(11px,2.6vw,14px);letter-spacing:.5em;text-transform:uppercase;color:var(--sage);margin-top:6px;}
+.ov-rule{width:clamp(150px,30cqw,230px);height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:2.6cqw 0;}
+.ov-line{font-style:italic;font-size:clamp(12px,2.05cqw,16px);color:var(--bone-dim);max-width:46ch;line-height:1.45;}
+.ov-grade{font-size:clamp(26px,6vw,40px);color:var(--gold-bright);font-weight:600;letter-spacing:.02em;}
+/* PURE strike: a gold stamp that slams in (double celebration vs a normal grade) */
+.ov-grade.pure{
+  color:var(--gold-bright);
+  text-shadow:0 0 22px rgba(216,184,120,.55), 0 0 60px rgba(216,184,120,.25);
+  animation:pureStamp .55s cubic-bezier(.2,1.6,.4,1) both;
+}
+@keyframes pureStamp{
+  0%{transform:scale(2.4) rotate(-3deg);opacity:0;}
+  60%{transform:scale(.94) rotate(.5deg);opacity:1;}
+  100%{transform:scale(1) rotate(0);}
+}
+.sum-actions{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;justify-content:center;}
+.share-hint{margin-top:8px;font-style:italic;font-size:clamp(11px,1.5cqw,13px);color:var(--sage);max-width:40ch;}
+.btn.share{background:none;border:1px solid var(--gold);color:var(--gold-bright);}
+.btn.share:hover{background:rgba(184,152,90,.16);}
+.btn.share:disabled{opacity:.5;cursor:default;}
+/* "How to play" link on the title + the one-time coach card */
+.howto{margin-top:12px;background:none;border:none;cursor:pointer;color:var(--sage);
+  font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-size:clamp(12px,1.6cqw,15px);
+  letter-spacing:.06em;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--sage-deep);}
+.howto:hover{color:var(--bone);}
+.coach{display:flex;flex-direction:column;align-items:center;gap:10px;max-width:46ch;}
+.coach-head{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;color:var(--gold-bright);
+  text-transform:uppercase;letter-spacing:.16em;font-size:clamp(16px,3.2cqw,24px);margin-bottom:2px;}
+.coach-step{display:flex;align-items:center;gap:12px;text-align:left;width:100%;
+  font-size:clamp(13px,1.9cqw,17px);color:var(--bone-dim);line-height:1.3;}
+.coach-step b{color:var(--bone);font-weight:600;}
+.coach-step .cs-n{flex:none;width:1.7em;height:1.7em;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  border:1.5px solid var(--gold);color:var(--gold-bright);font-weight:600;font-size:.95em;}
+.coach-foot{font-style:italic;font-size:clamp(11px,1.5cqw,13px);color:var(--sage-deep);margin-top:2px;}
+.coach .btn{margin-top:8px;}
+.ov-dist{font-size:clamp(54px,14vw,86px);font-weight:700;color:var(--bone);line-height:.9;font-variant-numeric:tabular-nums;}
+.ov-dist .yd{font-size:.32em;color:var(--sage);letter-spacing:.1em;}
+.prompt{
+  margin-top:3.6cqw;font-size:clamp(10px,1.6cqw,13px);letter-spacing:.34em;text-transform:uppercase;color:var(--gold-bright);
+  animation:pulse 1.3s ease-in-out infinite;cursor:pointer;
+}
+@keyframes pulse{0%,100%{opacity:.45}50%{opacity:1}}
+/* "Tap here" cue during the tap phases — purely a visual focal point; pointer
+   -events:none so the tap still lands on the canvas (you can tap anywhere). */
+.tap-cue{
+  position:absolute;top:42%;transform:translateY(-50%);z-index:4;
+  right:1.5%;left:auto; /* righty default: hug the right edge at thumb height */
+  width:clamp(72px,10.5cqw,104px);height:clamp(72px,10.5cqw,104px);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;
+  color:var(--gold-bright);border:2px solid var(--gold-bright);background:rgba(20,38,27,.42);
+  font-family:'Cormorant Garamond',Georgia,serif;letter-spacing:.12em;text-transform:uppercase;
+  text-align:center;line-height:1.1;
+  font-size:clamp(12px,1.8cqw,16px);transition:opacity .25s ease;
+}
+/* lefty: hug the left edge (thumb side). Up at shoulder height + flush to the
+   edge so it sits beside the golfer, not over him. */
+.stage.handed-left .tap-cue{right:auto;left:1.5%;}
+.stage.tap-ready .tap-cue{opacity:1;animation:tapCuePulse 1.4s ease-in-out infinite;}
+@keyframes tapCuePulse{
+  0%,100%{transform:translateY(-50%) scale(1);box-shadow:0 0 0 0 rgba(216,184,120,.45);}
+  50%{transform:translateY(-50%) scale(1.07);box-shadow:0 0 0 15px rgba(216,184,120,0);}
+}
+/* Lefty/Righty toggle on the title (moves the power meter to the opposite side) */
+.handed{display:flex;align-items:center;gap:8px;margin-top:14px;}
+.handed-lbl{font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:var(--sage-deep);}
+.handed-opt{
+  font-family:'Cormorant Garamond',Georgia,serif;font-size:13px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--sage);cursor:pointer;
+  background:rgba(20,38,27,.5);border:1px solid var(--pine-line);border-radius:4px;padding:5px 12px;
+}
+.handed-opt.on{color:var(--pine-deep);background:var(--gold-bright);border-color:var(--gold);font-weight:600;}
+.members{margin-top:18px;width:100%;max-width:330px;text-align:left;}
+.members h4{font-size:clamp(8px,1.15cqw,11px);letter-spacing:.34em;text-transform:uppercase;color:var(--sage-deep);
+  border-bottom:1px solid rgba(147,163,132,.25);padding-bottom:6px;margin-bottom:6px;text-align:center;}
+.members .row{display:flex;justify-content:space-between;font-size:15px;padding:3px 4px;color:var(--bone-dim);}
+.members .row.you{color:var(--gold-bright);font-weight:600;background:rgba(184,152,90,.1);border-radius:3px;}
+.members .row .pos{color:var(--sage-deep);width:22px;}
+.members .row .nm{flex:1;}
+.members .row .sc{font-variant-numeric:tabular-nums;}
+/* membership card */
+.card{
+  width:100%;max-width:340px;background:var(--bone);color:var(--pine-deep);
+  border-radius:6px;padding:18px 20px;margin-top:6px;position:relative;
+  box-shadow:0 16px 40px rgba(0,0,0,.5);border:2px solid var(--gold);
+}
+.card .ribbon{font-family:'Pinyon Script',cursive;font-size:30px;color:var(--pine);line-height:.9;}
+.card .sub{font-size:10px;letter-spacing:.4em;text-transform:uppercase;color:var(--sage-deep);margin-top:2px;}
+.card .perk{font-style:italic;font-size:17px;margin:12px 0 4px;color:var(--ink);}
+.card .code{
+  font-family:'Cormorant Garamond';letter-spacing:.28em;font-weight:700;font-size:26px;
+  color:var(--pine-deep);background:rgba(35,64,47,.08);border:1px dashed var(--sage-deep);
+  border-radius:4px;padding:8px;text-align:center;margin-top:6px;
+}
+.claim{display:flex;gap:6px;margin-top:10px;}
+.claim input{
+  flex:1;font-family:inherit;font-size:15px;padding:9px 10px;border:1px solid var(--sage-deep);
+  border-radius:4px;background:#fff;color:var(--ink);
+}
+.claim button,.btn{
+  font-family:'Cormorant Garamond';font-weight:600;font-size:14px;letter-spacing:.12em;text-transform:uppercase;
+  background:var(--pine);color:var(--bone);border:none;border-radius:4px;padding:9px 14px;cursor:pointer;
+  transition:.15s;
+}
+.claim button:hover,.btn:hover{background:var(--pine-line);}
+.footer{display:flex;align-items:center;justify-content:space-between;padding:10px 10px 2px;
+  font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:var(--sage-deep);}
+/* sound = speaker icon button (no text). pointer-events:auto is load-bearing:
+   the immersive footer is pointer-events:none, so without it the button is
+   untappable on mobile. */
+.sound{background:none;border:none;color:var(--sage);cursor:pointer;padding:6px;line-height:0;
+  display:inline-flex;align-items:center;justify-content:center;pointer-events:auto;}
+.sound svg{width:23px;height:23px;display:block;}
+.sound:hover{color:var(--bone);}
+html.immersive.landscape .sound{color:var(--bone);}
+html.immersive.landscape .sound svg{width:26px;height:26px;filter:drop-shadow(0 1px 2px rgba(20,38,27,.7));}
+.tag{font-style:italic;}
+
+/* cinematic cold-open intro (Path A) */
+.intro{
+  position:absolute;inset:0;z-index:6;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse at 50% 40%, #20392a 0%, #14261b 75%);
+  cursor:pointer;
+}
+/* absolute so the pre-buffered clips STACK; each ended clip stays frozen
+   underneath until the next is rendering (gapless cuts, no bg flash) */
+.intro-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;}
+.intro-slate{text-align:center;padding:26px;max-width:36ch;}
+.intro-slate .intro-shotnum{font-size:10px;letter-spacing:.46em;text-transform:uppercase;color:var(--sage-deep);}
+.intro-slate .intro-shotlabel{font-family:'Pinyon Script',cursive;font-size:clamp(34px,9vw,56px);color:var(--bone);line-height:.9;margin-top:6px;}
+.intro-slate .intro-cap{font-style:italic;font-size:clamp(14px,3.2vw,18px);color:var(--bone-dim);margin-top:10px;}
+.intro-slate .intro-note{margin-top:22px;font-size:11px;letter-spacing:.08em;color:var(--sage-deep);opacity:.75;}
+.intro-slate .intro-note b{color:var(--sage);font-weight:600;}
+.intro-skip{
+  position:absolute;bottom:14px;right:14px;z-index:7;
+  background:rgba(20,38,27,.55);border:1px solid var(--pine-line);color:var(--sage);
+  border-radius:4px;padding:6px 12px;font-family:'Cormorant Garamond',serif;
+  font-size:11px;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;
+}
+.intro-skip:hover{color:var(--bone);}
+/* tap-to-start gate: the gesture that unlocks audio so the cold-open plays unmuted.
+   Reuses the splash crest + Blue Collar lockup for a matched brand moment. */
+.intro-gate{display:flex;flex-direction:column;align-items:center;text-align:center;padding:26px;}
+.intro-gate .gate-prompt{margin-top:5cqw;font-size:clamp(11px,1.7cqw,14px);letter-spacing:.34em;
+  text-transform:uppercase;color:var(--gold-bright);animation:pulse 1.3s ease-in-out infinite;}
+.intro-gate .gate-snd{margin-top:10px;font-size:clamp(9px,1.3cqw,11px);letter-spacing:.18em;
+  text-transform:uppercase;color:var(--sage-deep);}
+
+/* respect reduced-motion: kill the prompt pulse (BUILD.md §8) */
+@media (prefers-reduced-motion: reduce){
+  .prompt{animation:none;opacity:1;}
+  .rotate-hint .rot-ico{animation:none;}
+  .stage.tap-ready .tap-cue{animation:none;}
+  .ov-grade.pure{animation:none;}
+}
+
+/* ===================== mobile orientation ===================== */
+/* "Immersive" (touch OR small viewport) + orientation are detected in JS and set
+   as html.immersive / html.landscape classes (main.ts). Driving the full-screen
+   layout from classes — not just CSS media features — makes it reliable on iOS
+   Chrome/Safari, where pointer/height media queries proved flaky. */
+.rotate-hint{display:none;}
+@keyframes rotTilt{0%,100%{transform:rotate(-12deg)}45%,80%{transform:rotate(78deg)}}
+
+/* Portrait on an immersive device: full-screen nudge to rotate. */
+html.immersive:not(.landscape) .rotate-hint{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  position:fixed;inset:0;z-index:50;padding:32px;text-align:center;
+  background:radial-gradient(ellipse at 50% 38%, #20392a 0%, #14261b 75%);color:var(--bone);
+}
+html.immersive:not(.landscape) .rotate-hint .rot-ico{font-size:52px;line-height:1;animation:rotTilt 2.4s ease-in-out infinite;transform-origin:center;}
+html.immersive:not(.landscape) .rotate-hint .rot-title{font-family:'Cormorant Garamond',Georgia,serif;font-size:26px;letter-spacing:.03em;color:var(--bone);}
+html.immersive:not(.landscape) .rotate-hint .rot-sub{font-size:12px;letter-spacing:.2em;line-height:2;text-transform:uppercase;color:var(--sage);}
+
+/* Immersive landscape: TRUE full-screen. Clubhouse fills the viewport; the canvas
+   is absolutely-positioned inset:0 and STRETCHES to fill (no object-fit — flaky on
+   iOS <canvas>; render width ≈ the viewport so any distortion is negligible). The
+   HUD floats over the scene with NO scrim band (a tight text-shadow keeps it
+   legible over bright sky). */
+html.immersive.landscape body{padding:0;margin:0;overflow:hidden;}
+/* position:fixed + inset:0 fills the VIEWPORT directly — no dependence on
+   100vw/100dvh/--app-height or safe-area math (those were leaving green bars). */
+/* inset the GAME by the safe-area amounts so it never runs under the Dynamic
+   Island / camera (Brave defaults to full-bleed without this; Safari/Chrome
+   resolve env() to ~0 where they already inset, so they look unchanged). The
+   pine html/body fills the gap around it. */
+html.immersive.landscape .clubhouse{position:fixed;
+  top:env(safe-area-inset-top);right:env(safe-area-inset-right);
+  bottom:env(safe-area-inset-bottom);left:env(safe-area-inset-left);
+  width:auto;height:auto;max-width:none;padding:0;border:none;border-radius:0;box-shadow:none;}
+html.immersive.landscape .clubhouse::before{display:none;}
+html.immersive.landscape .stage{position:absolute;inset:0;border:none;border-radius:0;background:#15281c;}
+html.immersive.landscape .stage canvas{position:absolute;inset:0;width:100%!important;height:100%!important;}
+html.immersive.landscape .topbar{position:absolute;top:0;left:0;right:0;z-index:7;pointer-events:none;background:none;
+  align-items:flex-start; /* top-align so the logo sits on the BALL/BEST line, not above it */
+  padding:7px 12px 4px 12px;} /* safe-area handled by the inset .clubhouse */
+html.immersive.landscape .brand-logo{width:clamp(82px,16cqw,114px);}
+html.immersive.landscape .brand-sub{font-size:clamp(7px,1.05cqw,10px);letter-spacing:.36em;margin-top:3px;}
+html.immersive.landscape .stats{gap:16px;}
+html.immersive.landscape .stat .label{font-size:14px;letter-spacing:.18em;}
+html.immersive.landscape .stat .val{font-size:28px;}
+html.immersive.landscape .stat .val .yd{font-size:18px;}
+/* in actual gameplay the HUD floats over the LIGHT sky → flip the mark + stats to
+   pine for contrast (no shadow). Title/result/intro keep the bone-on-dark look. */
+html.immersive.landscape.in-play .brand-logo{background:var(--pine-deep);}
+html.immersive.landscape.in-play .brand-sub{color:var(--pine);}
+html.immersive.landscape.in-play .stat .label{color:var(--pine);}
+html.immersive.landscape.in-play .stat .val{color:var(--pine-deep);}
+html.immersive.landscape.in-play .stat .val .yd{color:var(--pine);}
+html.immersive.landscape .footer{position:absolute;bottom:0;left:0;right:0;z-index:7;pointer-events:none;background:none;justify-content:flex-start;
+  padding:6px 12px 8px 12px;} /* safe-area handled by the inset .clubhouse */
+html.immersive.landscape .footer .tag{display:none;}
+html.immersive.landscape .ov-inner{padding:8px 16px;}
+html.immersive.landscape .crest{height:clamp(54px,10.5cqw,82px);width:auto;margin-bottom:1.4cqw;}
+html.immersive.landscape .ov-lockup{width:clamp(146px,27cqw,206px);}
+html.immersive.landscape .ov-rule{margin:1.3cqw 0;}
+html.immersive.landscape .ov-line{font-size:clamp(11px,1.7cqw,14px);line-height:1.3;}
+html.immersive.landscape .prompt{margin-top:1.8cqw;}
+html.immersive.landscape .handed{margin-top:10px;}
