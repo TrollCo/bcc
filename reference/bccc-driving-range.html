@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>The Driving Range — Blue Collar Country Club</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pinyon+Script&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --pine:#23402f;
+    --pine-deep:#182d20;
+    --pine-line:#2f5440;
+    --bone:#ece3cf;
+    --bone-dim:#cfc6ad;
+    --sage:#93a384;
+    --sage-deep:#6f7e62;
+    --ink:#14160f;
+    --gold:#b8985a;
+    --gold-bright:#d8b878;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    background:radial-gradient(ellipse at 50% 0%, #20392a 0%, var(--pine-deep) 70%);
+    color:var(--bone);
+    font-family:'Cormorant Garamond',Georgia,serif;
+    display:flex;align-items:center;justify-content:center;
+    min-height:100vh;padding:14px;overflow:hidden;
+    -webkit-user-select:none;user-select:none;
+  }
+  .clubhouse{
+    width:100%;max-width:680px;
+    background:linear-gradient(180deg,#274632,#1b3124);
+    border:1px solid var(--pine-line);
+    border-radius:6px;
+    padding:14px;
+    box-shadow:0 30px 90px rgba(0,0,0,.6), 0 0 0 1px rgba(0,0,0,.4) inset;
+    position:relative;
+  }
+  /* engraved double border */
+  .clubhouse::before{
+    content:"";position:absolute;inset:7px;border:1px solid rgba(236,227,207,.18);
+    border-radius:3px;pointer-events:none;
+  }
+  .topbar{
+    display:flex;align-items:flex-end;justify-content:space-between;
+    padding:6px 10px 12px;gap:10px;
+  }
+  .brand{line-height:.8;}
+  .brand .script{
+    font-family:'Pinyon Script',cursive;
+    font-size:clamp(30px,7vw,46px);
+    color:var(--bone);
+    text-shadow:0 1px 0 rgba(0,0,0,.4);
+    display:block;
+  }
+  .brand .caps{
+    font-size:clamp(9px,2.2vw,12px);
+    letter-spacing:.46em;
+    color:var(--sage);
+    text-transform:uppercase;
+    padding-left:4px;
+    margin-top:2px;
+  }
+  .stats{display:flex;gap:16px;text-align:right;}
+  .stat .label{font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--sage-deep);}
+  .stat .val{font-size:22px;font-weight:600;color:var(--bone);font-variant-numeric:tabular-nums;line-height:1;}
+  .stat .val .yd{font-size:12px;color:var(--sage);}
+  .stage{position:relative;border-radius:4px;overflow:hidden;border:1px solid var(--ink);background:#cfc6ad;}
+  canvas{display:block;width:100%;height:auto;touch-action:none;cursor:pointer;}
+  .grain{position:absolute;inset:0;pointer-events:none;opacity:.06;mix-blend-mode:multiply;
+    background-image:repeating-linear-gradient(0deg,#000 0 1px,transparent 1px 2px);}
+  .overlay{
+    position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:22px;z-index:5;
+    background:linear-gradient(180deg,rgba(24,45,32,.92),rgba(20,38,27,.95));
+  }
+  .overlay.hidden{display:none;}
+  .crest{width:74px;height:88px;margin-bottom:10px;}
+  .ov-script{font-family:'Pinyon Script',cursive;font-size:clamp(40px,10vw,62px);color:var(--bone);line-height:.85;}
+  .ov-caps{font-size:clamp(11px,2.6vw,14px);letter-spacing:.5em;text-transform:uppercase;color:var(--sage);margin-top:6px;}
+  .ov-rule{width:120px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:18px 0;}
+  .ov-line{font-style:italic;font-size:clamp(15px,3.4vw,19px);color:var(--bone-dim);max-width:34ch;line-height:1.35;}
+  .ov-grade{font-size:clamp(26px,6vw,40px);color:var(--gold-bright);font-weight:600;letter-spacing:.02em;}
+  .ov-dist{font-size:clamp(54px,14vw,86px);font-weight:700;color:var(--bone);line-height:.9;font-variant-numeric:tabular-nums;}
+  .ov-dist .yd{font-size:.32em;color:var(--sage);letter-spacing:.1em;}
+  .prompt{
+    margin-top:24px;font-size:13px;letter-spacing:.34em;text-transform:uppercase;color:var(--gold-bright);
+    animation:pulse 1.3s ease-in-out infinite;
+  }
+  @keyframes pulse{0%,100%{opacity:.45}50%{opacity:1}}
+  .members{margin-top:18px;width:100%;max-width:330px;text-align:left;}
+  .members h4{font-size:10px;letter-spacing:.34em;text-transform:uppercase;color:var(--sage-deep);
+    border-bottom:1px solid rgba(147,163,132,.25);padding-bottom:6px;margin-bottom:6px;text-align:center;}
+  .members .row{display:flex;justify-content:space-between;font-size:15px;padding:3px 4px;color:var(--bone-dim);}
+  .members .row.you{color:var(--gold-bright);font-weight:600;background:rgba(184,152,90,.1);border-radius:3px;}
+  .members .row .pos{color:var(--sage-deep);width:22px;}
+  .members .row .nm{flex:1;}
+  .members .row .sc{font-variant-numeric:tabular-nums;}
+  /* membership card */
+  .card{
+    width:100%;max-width:340px;background:var(--bone);color:var(--pine-deep);
+    border-radius:6px;padding:18px 20px;margin-top:6px;position:relative;
+    box-shadow:0 16px 40px rgba(0,0,0,.5);border:2px solid var(--gold);
+  }
+  .card .ribbon{font-family:'Pinyon Script',cursive;font-size:30px;color:var(--pine);line-height:.9;}
+  .card .sub{font-size:10px;letter-spacing:.4em;text-transform:uppercase;color:var(--sage-deep);margin-top:2px;}
+  .card .perk{font-style:italic;font-size:17px;margin:12px 0 4px;color:var(--ink);}
+  .card .code{
+    font-family:'Cormorant Garamond';letter-spacing:.28em;font-weight:700;font-size:26px;
+    color:var(--pine-deep);background:rgba(35,64,47,.08);border:1px dashed var(--sage-deep);
+    border-radius:4px;padding:8px;text-align:center;margin-top:6px;
+  }
+  .claim{display:flex;gap:6px;margin-top:10px;}
+  .claim input{
+    flex:1;font-family:inherit;font-size:15px;padding:9px 10px;border:1px solid var(--sage-deep);
+    border-radius:4px;background:#fff;color:var(--ink);
+  }
+  .claim button,.btn{
+    font-family:'Cormorant Garamond';font-weight:600;font-size:14px;letter-spacing:.12em;text-transform:uppercase;
+    background:var(--pine);color:var(--bone);border:none;border-radius:4px;padding:9px 14px;cursor:pointer;
+    transition:.15s;
+  }
+  .claim button:hover,.btn:hover{background:var(--pine-line);}
+  .footer{display:flex;align-items:center;justify-content:space-between;padding:10px 10px 2px;
+    font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:var(--sage-deep);}
+  .sound{background:none;border:1px solid var(--pine-line);color:var(--sage);border-radius:4px;
+    padding:5px 9px;font-family:inherit;font-size:10px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;}
+  .sound:hover{color:var(--bone);}
+  .tag{font-style:italic;}
+</style>
+</head>
+<body>
+  <div class="clubhouse">
+    <div class="topbar">
+      <div class="brand">
+        <span class="script">Blue&nbsp;Collar</span>
+        <span class="caps">Country&nbsp;Club&nbsp;&middot;&nbsp;Driving&nbsp;Range</span>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="label">Ball</div><div class="val" id="ballNo">1<span class="yd">/3</span></div></div>
+        <div class="stat"><div class="label">Best</div><div class="val" id="best">0<span class="yd">yd</span></div></div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <canvas id="game" width="680" height="460"></canvas>
+      <div class="grain"></div>
+      <div class="overlay" id="overlay"></div>
+    </div>
+
+    <div class="footer">
+      <span class="tag" id="footTag">No Suits, No Ties, Only Good Times</span>
+      <button class="sound" id="soundBtn">Sound: Off</button>
+    </div>
+  </div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* =======================================================================
+     BACKEND HANDOFF (for the storefront dev)
+     -----------------------------------------------------------------------
+     This artifact is the full front-end game + reward reveal. Three things
+     need server wiring before it goes live on the BCCC drop page:
+       1) MEMBER_CODE  — replace the client-generated code with a real,
+          single-use code minted by Shopify/Klaviyo on email submit.
+       2) claimMembership(email) — POST the email + best drive to your ESP;
+          gate the code reveal behind a successful response.
+       3) MEMBERS[] leaderboard — swap the seeded array for a fetch() to a
+          persisted standings endpoint (browser storage is disabled here).
+     Everything below the line is self-contained and drop-in ready.
+     ===================================================================== */
+  var MEMBER_THRESHOLD = 300;   // yards for a single drive to earn membership
+  var BALLS_PER_ROUND  = 3;
+
+  // Visible canvas is WebGL; the game draws to an offscreen 2D canvas, then gets graded.
+  var glCanvas = document.getElementById('game');
+  var W = glCanvas.width, H = glCanvas.height;
+  var canvas = document.createElement('canvas'); canvas.width = W; canvas.height = H;
+  var ctx = canvas.getContext('2d');
+
+  // ---- WebGL post-process state ----
+  var gl=null, prog=null, tex=null, quadBuf=null, aPosLoc=0, uTexLoc=null, uTimeLoc=null, uResLoc=null, useGL=false, inputEl=glCanvas;
+  var VERT = [
+    'attribute vec2 aPos; varying vec2 vUv;',
+    'void main(){ vUv = aPos*0.5+0.5; gl_Position = vec4(aPos,0.0,1.0); }'
+  ].join('\n');
+  var FRAG = [
+    'precision highp float;',
+    'varying vec2 vUv;',
+    'uniform sampler2D uTex; uniform float uTime; uniform vec2 uRes;',
+    'const vec3 PINE=vec3(0.106,0.220,0.157);',
+    'const vec3 PINE2=vec3(0.137,0.251,0.184);',
+    'const vec3 SAGE=vec3(0.576,0.640,0.518);',
+    'const vec3 BONE=vec3(0.925,0.890,0.812);',
+    'const vec3 BONEHI=vec3(0.98,0.95,0.86);',
+    'float luma(vec3 c){ return dot(c, vec3(0.299,0.587,0.114)); }',
+    'float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7)))*43758.5453); }',
+    'float vnoise(vec2 p){ vec2 i=floor(p); vec2 f=fract(p);',
+    '  float a=hash(i); float b=hash(i+vec2(1.0,0.0)); float c=hash(i+vec2(0.0,1.0)); float d=hash(i+vec2(1.0,1.0));',
+    '  vec2 u=f*f*(3.0-2.0*f); return mix(mix(a,b,u.x),mix(c,d,u.x),u.y); }',
+    'void main(){',
+    '  vec2 uv=vUv; vec3 src=texture2D(uTex,uv).rgb; float l=luma(src);',
+    '  vec3 duo;',
+    '  if(l<0.33) duo=mix(PINE,PINE2,l/0.33);',
+    '  else if(l<0.62) duo=mix(PINE2,SAGE,(l-0.33)/0.29);',
+    '  else duo=mix(SAGE,BONE,(l-0.62)/0.38);',
+    '  duo=mix(duo,src,0.22);',                                   // keep a touch of brand chroma
+    '  vec2 sp=uv*uRes; float c1=cos(0.785398); float s1=sin(0.785398);',
+    '  float scr1=0.5+0.5*sin((sp.x*c1 - sp.y*s1)*1.4);',          // 45deg line screen
+    '  duo*=1.0 - smoothstep(0.0,0.5,1.0-l)*(1.0-scr1)*0.20;',
+    '  float scr2=0.5+0.5*sin((sp.x*c1 + sp.y*s1)*1.4);',          // cross direction
+    '  duo*=1.0 - smoothstep(0.0,0.35,1.0-l)*(1.0-scr2)*0.14;',
+    '  vec3 glow=vec3(0.0); float texel=1.0/uRes.y;',              // halation bloom
+    '  for(int i=0;i<12;i++){ float a=float(i)/12.0*6.2831853; vec2 off=vec2(cos(a),sin(a))*texel*6.0;',
+    '    vec3 ss=texture2D(uTex,uv+off).rgb; glow+=max(0.0,luma(ss)-0.72)*ss; }',
+    '  glow/=12.0; duo+=glow*BONEHI*1.2;',
+    '  float g=vnoise(uv*uRes*0.9 + uTime*60.0); duo+=(g-0.5)*0.045;',  // film grain
+    '  float fib=vnoise(uv*vec2(uRes.x*0.25,uRes.y*0.25)); duo*=0.97+fib*0.05;', // paper fiber
+    '  vec2 vd=uv-0.5; float vig=smoothstep(0.9,0.35,length(vd)*1.25); duo*=mix(0.74,1.0,vig);', // vignette
+    '  gl_FragColor=vec4(clamp(duo,0.0,1.0),1.0);',
+    '}'
+  ].join('\n');
+  initGL();
+
+  var W2 = W, H2 = H; // (kept for clarity; W/H used throughout)
+  var GROUND = H - 86;
+  var PXY = 2.55;               // pixels per yard (world space)
+  var GX0 = 150;                // golfer screen-x when camera at 0
+
+  var el = {
+    overlay: document.getElementById('overlay'),
+    ballNo: document.getElementById('ballNo'),
+    best: document.getElementById('best'),
+    footTag: document.getElementById('footTag'),
+    soundBtn: document.getElementById('soundBtn'),
+  };
+
+  var STATE = {TITLE:0, ADDRESS:1, POWER:2, CONTACT:3, SWING:4, FLIGHT:5, RESULT:6, SUMMARY:7};
+  var state = STATE.TITLE;
+
+  var soundOn = false, actx=null;
+  function tone(f,d,t,v){ if(!soundOn) return; try{
+    if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)();
+    var o=actx.createOscillator(), g=actx.createGain();
+    o.type=t||'sine'; o.frequency.value=f; g.gain.value=v||0.05;
+    o.connect(g); g.connect(actx.destination); var n=actx.currentTime;
+    g.gain.setValueAtTime(g.gain.value,n); g.gain.exponentialRampToValueAtTime(0.0001,n+(d||0.1));
+    o.start(n); o.stop(n+(d||0.1));
+  }catch(e){} }
+
+  // round state
+  var ballIndex = 0;          // 0..BALLS_PER_ROUND-1
+  var bestDrive = 0;
+  var totalYds = 0;
+  var shots = [];             // {xpx, yd} landed markers for the range scatter
+
+  // swing meters
+  var power = 0, powerDir = 1, powerSpeed = 1.62;     // oscillation (retuned: more timing)
+  var contact = 0, contactDir = 1, contactSpeed = 2.55; // faster needle = real skill gate
+  var SWEET = 0.5, SWEET_W = 0.105;                   // tighter sweet zone (~21% of bar)
+  var lockedPower = 0, lockedQ = 0;
+
+  // swing animation
+  var swingT = 0;             // 0 address, .5 top, ~.7 impact, 1 follow
+  var swinging = false, swingLaunched=false;
+
+  // ball flight
+  var ball = {x:0, y:GROUND, carryPx:0, totalPx:0, apex:0, p:0, Tc:1, rolling:false, rollFrom:0, rollT:0, rollDur:0, done:false, trail:[]};
+  var resultYd = 0, resultGrade='', resultLine='';
+
+  var cameraX = 0;
+  var puffs = [];
+  var clouds = [{x:90,y:70,s:1},{x:340,y:46,s:1.3},{x:560,y:84,s:.9}];
+
+  // seeded leaderboard (replace w/ server fetch — see handoff)
+  var MEMBERS = [
+    {nm:'Big Mike — HVAC', sc:392},
+    {nm:'Dwayne — Framer', sc:358},
+    {nm:'Sully — Plumber', sc:341},
+    {nm:'Tig — Welder', sc:327},
+    {nm:'Sparks — Sparky', sc:309},
+    {nm:'Concrete Carl', sc:286}
+  ];
+
+  var TAGS = ['No Suits, No Ties, Only Good Times','All Trades Welcome',
+              'Open 24/7','Members Only','Dirty Hands, Clean Money'];
+
+  // ---------- helpers ----------
+  function w2s(xpx){ return GX0 + xpx - cameraX; }
+  function fmtYd(v){ return Math.round(v); }
+
+  function newCode(){
+    var c='BCCC-'; var a='ACDEFGHJKLMNPRTUVWXY3479';
+    for(var i=0;i<4;i++) c+=a[Math.floor(Math.random()*a.length)];
+    return c;
+  }
+
+  // ---------- crest SVG ----------
+  var CREST = '<svg class="crest" viewBox="0 0 80 96" fill="none" xmlns="http://www.w3.org/2000/svg">'
+    +'<path d="M40 4 L70 14 V46 C70 70 56 84 40 92 C24 84 10 70 10 46 V14 Z" stroke="#b8985a" stroke-width="2" fill="rgba(184,152,90,.06)"/>'
+    +'<path d="M40 12 L62 19 V46 C62 65 51 77 40 84 C29 77 18 65 18 46 V19 Z" stroke="#93a384" stroke-width="1"/>'
+    +'<text x="40" y="44" text-anchor="middle" font-family="Cormorant Garamond,serif" font-size="22" font-weight="700" fill="#ece3cf">BC</text>'
+    +'<text x="40" y="60" text-anchor="middle" font-family="Cormorant Garamond,serif" font-size="9" letter-spacing="2" fill="#93a384">2017</text>'
+    +'<path d="M22 70 Q40 78 58 70" stroke="#b8985a" stroke-width="1.5" fill="none"/>'
+    +'</svg>';
+
+  // ===================== OVERLAYS =====================
+  function showTitle(){
+    state = STATE.TITLE;
+    el.overlay.classList.remove('hidden');
+    el.overlay.innerHTML =
+      CREST +
+      '<div class="ov-script">Blue&nbsp;Collar</div>'+
+      '<div class="ov-caps">Country&nbsp;Club</div>'+
+      '<div class="ov-rule"></div>'+
+      '<div class="ov-line">Three balls. One reputation. Smash a drive past '+MEMBER_THRESHOLD+
+        ' yards and the club makes it official.</div>'+
+      '<div class="prompt">Tap to tee off</div>'+
+      '<div class="members" style="margin-top:16px"><h4>No Suits &middot; No Ties &middot; All Trades Welcome</h4></div>';
+  }
+
+  function hideOverlay(){ el.overlay.classList.add('hidden'); }
+
+  function showResult(){
+    state = STATE.RESULT;
+    el.overlay.classList.remove('hidden');
+    var last = (ballIndex+1 >= BALLS_PER_ROUND);
+    el.overlay.innerHTML =
+      '<div class="ov-grade">'+resultGrade+'</div>'+
+      '<div class="ov-dist">'+fmtYd(resultYd)+'<span class="yd"> YD</span></div>'+
+      '<div class="ov-line" style="margin-top:10px">'+resultLine+'</div>'+
+      '<div class="prompt">Tap for '+(last?'the scorecard':'your next ball')+'</div>';
+  }
+
+  function showSummary(){
+    state = STATE.SUMMARY;
+    el.overlay.classList.remove('hidden');
+
+    // insert player into standings
+    var board = MEMBERS.slice();
+    var youIdx = -1;
+    board.push({nm:'You', sc:bestDrive, you:true});
+    board.sort(function(a,b){return b.sc-a.sc;});
+    var rows='';
+    for(var i=0;i<board.length && i<7;i++){
+      var m=board[i];
+      if(m.you) youIdx=i;
+      rows += '<div class="row'+(m.you?' you':'')+'"><span class="pos">'+(i+1)+'</span>'+
+              '<span class="nm">'+m.nm+'</span><span class="sc">'+m.sc+' yd</span></div>';
+    }
+
+    var earned = bestDrive >= MEMBER_THRESHOLD;
+    var head = earned
+      ? '<div class="ov-grade">Membership Granted</div>'
+      : '<div class="ov-grade" style="color:var(--bone)">Round Complete</div>';
+
+    var body;
+    if(earned){
+      var code = newCode();
+      body =
+        '<div class="card">'+
+          '<div class="ribbon">Member in Good Standing</div>'+
+          '<div class="sub">Blue Collar Country Club &middot; Est. 2017</div>'+
+          '<div class="perk">15% off the BCCC drop + early access.</div>'+
+          '<div class="code" id="codeBox">— — — —</div>'+
+          '<div class="claim">'+
+            '<input id="emailIn" type="email" placeholder="Email to claim your card" />'+
+            '<button id="claimBtn">Claim</button>'+
+          '</div>'+
+        '</div>'+
+        '<div class="members">'+
+          '<h4>Member Standings</h4>'+rows+
+        '</div>'+
+        '<div class="prompt" id="again" style="margin-top:14px">Play another round</div>';
+    } else {
+      body =
+        '<div class="ov-dist" style="font-size:clamp(40px,11vw,64px)">'+bestDrive+'<span class="yd"> YD BEST</span></div>'+
+        '<div class="ov-line" style="margin-top:8px">'+ (MEMBER_THRESHOLD-bestDrive) +
+          ' yards short of a membership. The driving range is open 24/7.</div>'+
+        '<div class="members" style="margin-top:14px"><h4>Member Standings</h4>'+rows+'</div>'+
+        '<button class="btn" id="again" style="margin-top:16px">Hit another bucket</button>';
+    }
+    el.overlay.innerHTML = head + '<div class="ov-rule"></div>' + body;
+
+    // wire buttons
+    var again = document.getElementById('again');
+    if(again) again.addEventListener('click', function(ev){ ev.stopPropagation(); startRound(); });
+    var claimBtn = document.getElementById('claimBtn');
+    if(claimBtn){
+      var doClaim = function(ev){
+        ev.stopPropagation();
+        var email = (document.getElementById('emailIn').value||'').trim();
+        if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){
+          document.getElementById('emailIn').style.borderColor = '#b85a5a';
+          return;
+        }
+        /* === BACKEND: POST {email, bestDrive} to ESP, then reveal server code === */
+        document.getElementById('codeBox').textContent = newCode();
+        claimBtn.textContent = 'Sent ✓'; claimBtn.disabled = true;
+        tone(880,.18,'sine',.06);
+      };
+      claimBtn.addEventListener('click', doClaim);
+    }
+  }
+
+  // ===================== ROUND FLOW =====================
+  function startRound(){
+    ballIndex = 0; bestDrive = 0; totalYds = 0; shots = [];
+    updateStats();
+    nextBall();
+  }
+  function nextBall(){
+    swingT = 0; swinging=false; swingLaunched=false;
+    ball.x=0; ball.y=GROUND; ball.p=0; ball.rolling=false; ball.done=false; ball.trail=[];
+    cameraX = 0;
+    power=0; powerDir=1; contact=0; contactDir=1;
+    state = STATE.ADDRESS;
+    hideOverlay();
+    el.footTag.textContent = TAGS[ballIndex % TAGS.length];
+    updateStats();
+  }
+  function updateStats(){
+    el.ballNo.innerHTML = (Math.min(ballIndex+1,BALLS_PER_ROUND))+'<span class="yd">/'+BALLS_PER_ROUND+'</span>';
+    el.best.innerHTML = bestDrive+'<span class="yd">yd</span>';
+  }
+
+  // tap handler — single thumb drives the whole loop
+  function tap(){
+    if(state===STATE.TITLE){ startRound(); return; }
+    if(state===STATE.ADDRESS){ state=STATE.POWER; tone(420,.05,'sine',.04); return; }
+    if(state===STATE.POWER){
+      lockedPower = power; state=STATE.CONTACT; tone(560,.05,'sine',.04); return;
+    }
+    if(state===STATE.CONTACT){
+      var off = Math.abs(contact - SWEET);
+      lockedQ = Math.max(0, 1 - off/SWEET_W*0.85); // 1 = pure
+      lockedQ = Math.min(1, lockedQ);
+      startSwing();
+      return;
+    }
+    if(state===STATE.RESULT){
+      if(ballIndex+1 >= BALLS_PER_ROUND){ ballIndex++; showSummary(); }
+      else { ballIndex++; nextBall(); }
+      return;
+    }
+  }
+
+  function startSwing(){
+    state = STATE.SWING; swinging=true; swingT=0.5; swingLaunched=false;
+    // distance model (tuned for fun, not realism)
+    var P = lockedPower, Q = lockedQ;
+    var carry = (110 + 210*P) * (0.55 + 0.45*Q);
+    var roll  = (8 + 30*Q) * (0.5+0.5*P);
+    resultYd = Math.max(8, Math.round(carry + roll));
+    ball.totalPx = resultYd * PXY;
+    ball.carryPx = ball.totalPx * (0.82 + 0.06*Q);
+    ball.rollFrom = ball.carryPx;
+    ball.apex = Math.max(50, Math.min(210, resultYd*0.92*(0.7+0.3*Q)));
+    ball.Tc = 0.85 + resultYd/520;
+    ball.p = 0; ball.rolling=false; ball.done=false; ball.trail=[];
+    // grade text
+    gradeShot(resultYd, Q);
+    tone(180,.06,'sine',.05);
+  }
+
+  function gradeShot(yd, Q){
+    if(Q < 0.32){
+      resultGrade = 'Shanked It';
+      resultLine = '“…we’ll mark that one as a practice swing.”';
+    } else if(yd >= 330){
+      resultGrade = 'Absolute Cannon';
+      resultLine = '“A drive worthy of the back nine, sir.”';
+    } else if(yd >= MEMBER_THRESHOLD){
+      resultGrade = 'Now That’s Clubhouse Talk';
+      resultLine = '“The members are nodding. Quietly impressed.”';
+    } else if(yd >= 230){
+      resultGrade = 'Respectable';
+      resultLine = '“Solid contact. The beverage cart approves.”';
+    } else if(yd >= 160){
+      resultGrade = 'On the Short Grass';
+      resultLine = '“Not every swing’s a highlight. Tee up another.”';
+    } else {
+      resultGrade = 'Worm Burner';
+      resultLine = '“It went forward. We’re calling that a positive.”';
+    }
+    if(Q >= 0.97 && yd >= 200){ resultGrade = 'PURE — Flushed It'; }
+  }
+
+  function landShot(){
+    bestDrive = Math.max(bestDrive, resultYd);
+    totalYds += resultYd;
+    shots.push({xpx: ball.totalPx, yd: resultYd});
+    updateStats();
+    showResult();
+    tone(resultYd>=MEMBER_THRESHOLD?740:300,.12,'sine',.05);
+  }
+
+  // ===================== UPDATE =====================
+  var last = performance.now();
+  function update(dt){
+    // clouds drift
+    for(var i=0;i<clouds.length;i++){ clouds[i].x += dt*4*clouds[i].s; if(clouds[i].x>W+80) clouds[i].x=-80; }
+
+    if(state===STATE.POWER){
+      power += powerDir*powerSpeed*dt;
+      if(power>=1){power=1;powerDir=-1;} if(power<=0){power=0;powerDir=1;}
+    }
+    if(state===STATE.CONTACT){
+      // ease the club into top-of-backswing while the player aims contact
+      swingT += (0.5-swingT)*Math.min(1,dt*11);
+      contact += contactDir*contactSpeed*dt;
+      if(contact>=1){contact=1;contactDir=-1;} if(contact<=0){contact=0;contactDir=1;}
+    }
+    if(state===STATE.SWING){
+      swingT += dt*3.4;
+      if(!swingLaunched && swingT>=0.70){    // impact frame
+        swingLaunched = true;
+        state = STATE.FLIGHT;
+        tone(520,.05,'square',.05);
+        puffs.push({x:0,y:GROUND,life:.4,max:.4});
+      }
+      if(swingT>1) swingT=1;
+    }
+    if(state===STATE.FLIGHT){
+      if(swingT<1) swingT += dt*3.0; if(swingT>1) swingT=1;
+      if(!ball.rolling){
+        ball.p += dt/ball.Tc;
+        if(ball.p>=1){
+          ball.p=1; ball.rolling=true; ball.rollT=0;
+          ball.rollDur = 0.55 + (ball.totalPx-ball.carryPx)/600;
+          puffs.push({x:ball.carryPx,y:GROUND,life:.35,max:.35});
+          tone(240,.05,'sine',.03);
+        }
+        ball.x = ball.carryPx * ball.p;
+        var h = 4*ball.apex*ball.p*(1-ball.p);
+        ball.y = GROUND - h;
+        ball.trail.push({x:ball.x,y:ball.y});
+        if(ball.trail.length>16) ball.trail.shift();
+      } else {
+        ball.rollT += dt;
+        var rp = Math.min(1, ball.rollT/ball.rollDur);
+        var ease = 1-Math.pow(1-rp,2);
+        ball.x = ball.rollFrom + (ball.totalPx-ball.rollFrom)*ease;
+        ball.y = GROUND;
+        if(rp>=1){ landShot(); }
+      }
+      // camera follow
+      cameraX = Math.max(0, ball.x - 230);
+    }
+
+    for(var j=puffs.length-1;j>=0;j--){ puffs[j].life-=dt; if(puffs[j].life<=0) puffs.splice(j,1); }
+  }
+
+  // ===================== RENDER =====================
+  function render(){
+    // sky (bone, country-club morning)
+    var sky = ctx.createLinearGradient(0,0,0,GROUND);
+    sky.addColorStop(0,'#efe7d4'); sky.addColorStop(1,'#e3dcc4');
+    ctx.fillStyle=sky; ctx.fillRect(0,0,W,GROUND);
+
+    // distant sage hills (parallax)
+    drawHills(0.25,'#aeb89c',GROUND-46,28);
+    drawHills(0.45,'#9aa888',GROUND-26,22);
+
+    // Palms clubhouse engraving — parallax backdrop behind the tee
+    drawClubhouse(W*0.5 - cameraX*0.45, GROUND);
+
+    // clouds (engraved outline)
+    ctx.save();
+    for(var i=0;i<clouds.length;i++){ drawCloud(clouds[i].x,clouds[i].y,clouds[i].s); }
+    ctx.restore();
+
+    // fairway
+    var fw = ctx.createLinearGradient(0,GROUND,0,H);
+    fw.addColorStop(0,'#2c5038'); fw.addColorStop(1,'#1f3a2a');
+    ctx.fillStyle=fw; ctx.fillRect(0,GROUND,W,H-GROUND);
+
+    // mow stripes + yard posts (world space)
+    drawRange();
+
+    // previous shot markers (the scatter)
+    for(var s=0;s<shots.length;s++){
+      var sx = w2s(shots[s].xpx);
+      if(sx<-10||sx>W+10) continue;
+      ctx.fillStyle='rgba(236,227,207,.55)';
+      ctx.beginPath(); ctx.arc(sx,GROUND+4,2.5,0,7); ctx.fill();
+      ctx.fillStyle='rgba(236,227,207,.4)';
+      ctx.font='11px Cormorant Garamond, serif'; ctx.textAlign='center';
+      ctx.fillText(shots[s].yd, sx, GROUND-6);
+    }
+
+    // pin + BCCC pennant at member threshold
+    drawPin(MEMBER_THRESHOLD);
+
+    // puffs
+    for(var p=0;p<puffs.length;p++){
+      var pf=puffs[p], a=pf.life/pf.max, px=w2s(pf.x);
+      ctx.globalAlpha=a*0.6; ctx.fillStyle='#d8cfb6';
+      ctx.beginPath(); ctx.arc(px,GROUND-3,8*(1-a)+4,0,7); ctx.fill();
+      ctx.globalAlpha=1;
+    }
+
+    // golfer (world x=0)
+    drawGolfer(w2s(0), GROUND, swingT);
+
+    // ball
+    if(state===STATE.FLIGHT || (state===STATE.RESULT)){
+      // trail
+      for(var t=0;t<ball.trail.length;t++){
+        var tt=ball.trail[t], al=(t/ball.trail.length)*0.4;
+        ctx.fillStyle='rgba(20,22,15,'+al+')';
+        ctx.beginPath(); ctx.arc(w2s(tt.x),tt.y,1.6,0,7); ctx.fill();
+      }
+      var bx=w2s(ball.x);
+      ctx.save();
+      ctx.shadowColor='rgba(0,0,0,.3)'; ctx.shadowBlur=4;
+      ctx.fillStyle='#fbf7ec';
+      ctx.beginPath(); ctx.arc(bx,ball.y-6,5,0,7); ctx.fill();
+      ctx.restore();
+      ctx.strokeStyle='rgba(35,64,47,.5)'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.arc(bx,ball.y-6,5,0,7); ctx.stroke();
+    }
+
+    // screen-space meters
+    if(state===STATE.POWER) drawPowerMeter();
+    if(state===STATE.CONTACT) drawContactMeter();
+    if(state===STATE.ADDRESS) drawHint('Tap to start your swing');
+
+    // live distance during flight
+    if(state===STATE.FLIGHT){
+      ctx.fillStyle='rgba(20,38,27,.9)';
+      ctx.font='600 30px Cormorant Garamond, serif'; ctx.textAlign='right';
+      ctx.fillText(Math.round(ball.x/PXY)+' yd', W-18, 40);
+    }
+  }
+
+  function drawHills(par,color,baseY,amp){
+    ctx.fillStyle=color;
+    ctx.beginPath(); ctx.moveTo(0,GROUND);
+    var off = (cameraX*par)%160;
+    for(var x=-off;x<=W;x+=8){
+      var y=baseY - Math.sin((x+cameraX*par)/90)*amp - amp;
+      ctx.lineTo(x,y);
+    }
+    ctx.lineTo(W,GROUND); ctx.closePath(); ctx.fill();
+  }
+
+  function drawCloud(x,y,s){
+    ctx.strokeStyle='rgba(147,163,132,.5)'; ctx.lineWidth=1.4; ctx.fillStyle='rgba(236,227,207,.5)';
+    ctx.beginPath();
+    ctx.arc(x,y,12*s,Math.PI*0.5,Math.PI*1.5);
+    ctx.arc(x+14*s,y-8*s,15*s,Math.PI,Math.PI*1.85);
+    ctx.arc(x+34*s,y-4*s,12*s,Math.PI*1.2,Math.PI*2.1);
+    ctx.arc(x+46*s,y,11*s,Math.PI*1.5,Math.PI*0.5);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+  }
+
+  // ---- Palms clubhouse engraving (echoes the BCCC Palms tee) ----
+  function drawPalm(x, baseY, h, color){
+    ctx.strokeStyle=color; ctx.lineWidth=1.5; ctx.lineCap='round';
+    // tapered curved trunk
+    ctx.beginPath(); ctx.moveTo(x,baseY); ctx.quadraticCurveTo(x+6,baseY-h*0.5,x-3,baseY-h); ctx.stroke();
+    var tx=x-3, ty=baseY-h, n=7;
+    // full drooping frond crown
+    for(var i=0;i<n;i++){
+      var a=(-Math.PI*0.96) + i*(Math.PI*1.92/(n-1));
+      var len=18 + (i%2?5:0);
+      var ex=tx+Math.cos(a)*len, ey=ty+Math.sin(a)*len*0.62 - 4;
+      var mx=tx+Math.cos(a)*len*0.5, my=ty-11;
+      ctx.beginPath(); ctx.moveTo(tx,ty); ctx.quadraticCurveTo(mx,my,ex,ey); ctx.stroke();
+    }
+    ctx.fillStyle=color; ctx.beginPath(); ctx.arc(tx,ty+1,1.5,0,7); ctx.fill();
+  }
+  function drawOak(x, baseY, r, color){
+    ctx.strokeStyle=color; ctx.lineWidth=1.4; ctx.fillStyle='rgba(111,126,98,.16)';
+    ctx.beginPath(); ctx.moveTo(x,baseY); ctx.lineTo(x,baseY-r*0.7); ctx.stroke();
+    var cyc=baseY-r*0.7-r*0.5, bumps=10;
+    ctx.beginPath();
+    for(var i=0;i<=bumps;i++){
+      var a=Math.PI*2*i/bumps, rr=r*(0.82+0.18*Math.sin(i*1.9));
+      var px=x+Math.cos(a)*rr, py=cyc+Math.sin(a)*rr;
+      if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+    }
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+  }
+  function archWin(x,y,r,color){
+    ctx.strokeStyle=color; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(x-r,y); ctx.lineTo(x-r,y-r); ctx.arc(x,y-r,r,Math.PI,0); ctx.lineTo(x+r,y); ctx.stroke();
+  }
+  function drawTruck(x,baseY,type,col){
+    ctx.lineWidth=1.2; ctx.lineCap='round';
+    var w=34,h=11, y=baseY-h;
+    ctx.fillStyle='rgba(236,227,207,.22)'; ctx.strokeStyle=col;
+    ctx.beginPath(); ctx.rect(x,y,w,h); ctx.fill(); ctx.stroke();        // body
+    ctx.beginPath(); ctx.rect(x+w-12,y-7,12,7); ctx.fill(); ctx.stroke();// cab (front right)
+    ctx.beginPath(); ctx.arc(x+w-1.5,y-1.5,1,0,7); ctx.fillStyle=col; ctx.fill(); // headlight
+    function wheel(wx){ ctx.beginPath(); ctx.arc(wx,baseY,2.6,0,7); ctx.fillStyle='rgba(35,64,47,.5)'; ctx.fill(); ctx.strokeStyle=col; ctx.stroke(); }
+    wheel(x+7); wheel(x+w-6); if(type!=='van') wheel(x+w-13);            // extra axle on rigs
+    ctx.strokeStyle=col; ctx.fillStyle='rgba(236,227,207,.22)';
+    if(type==='bucket'){ ctx.beginPath(); ctx.moveTo(x+7,y); ctx.lineTo(x-11,y-21); ctx.stroke();
+      ctx.beginPath(); ctx.rect(x-16,y-26,8,6); ctx.fill(); ctx.stroke(); }
+    else if(type==='mixer'){ ctx.beginPath(); ctx.ellipse(x+13,y-4,10,7,0.35,0,7); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x+5,y-8); ctx.lineTo(x+21,y-1); ctx.stroke(); }      // drum band
+    else if(type==='dump'){ ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x+5,y-11); ctx.lineTo(x+24,y-11); ctx.lineTo(x+22,y); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+    else { ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x,y-7); ctx.lineTo(x+w-12,y-7); ctx.stroke(); } // van box
+  }
+  function drawClubhouse(cx, baseY){
+    if(cx < -300 || cx > W+300) return;
+    ctx.save(); ctx.lineJoin='round'; ctx.lineCap='round';
+    var pine='rgba(35,64,47,.62)', sage='rgba(111,126,98,.5)', bone='rgba(236,227,207,.32)',
+        roof='rgba(111,126,98,.3)', tile='rgba(35,64,47,.32)';
+    // flanking oaks + varied palms (palms tower over the clubhouse, as in the print)
+    drawOak(cx-186, baseY-2, 30, sage);
+    drawOak(cx+186, baseY-2, 30, sage);
+    drawPalm(cx-150, baseY-2, 152, pine);
+    drawPalm(cx-110, baseY-2, 120, sage);
+    drawPalm(cx+110, baseY-2, 120, sage);
+    drawPalm(cx+150, baseY-2, 152, pine);
+    // building base + wings
+    var bw=210, bh=54, bx=cx-bw/2, by=baseY-bh;
+    ctx.fillStyle=bone; ctx.strokeStyle=pine; ctx.lineWidth=1.2;
+    ctx.beginPath(); ctx.rect(bx,by,bw,bh); ctx.fill(); ctx.stroke();
+    // wing tiled hip roof
+    ctx.fillStyle=roof; ctx.beginPath(); ctx.moveTo(bx-7,by); ctx.lineTo(bx+26,by-16); ctx.lineTo(bx+bw-26,by-16); ctx.lineTo(bx+bw+7,by); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle=tile; ctx.lineWidth=0.8;
+    ctx.beginPath(); ctx.moveTo(bx-3,by-5); ctx.lineTo(bx+bw+3,by-5); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(bx+13,by-11); ctx.lineTo(bx+bw-13,by-11); ctx.stroke();
+    // central pavilion
+    var pw=68, pbx=cx-pw/2, pby=by-26;
+    ctx.fillStyle=bone; ctx.strokeStyle=pine; ctx.lineWidth=1.2; ctx.beginPath(); ctx.rect(pbx,pby,pw,26); ctx.fill(); ctx.stroke();
+    ctx.fillStyle=roof; ctx.beginPath(); ctx.moveTo(pbx-5,pby); ctx.lineTo(cx-16,pby-15); ctx.lineTo(cx+16,pby-15); ctx.lineTo(pbx+pw+5,pby); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle=tile; ctx.lineWidth=0.8; ctx.beginPath(); ctx.moveTo(pbx-1,pby-5); ctx.lineTo(pbx+pw+1,pby-5); ctx.stroke();
+    // cupola tower w/ arched openings + pyramidal roof + finial
+    var tw=22, tx=cx-tw/2, ty=pby-15-17;
+    ctx.fillStyle=bone; ctx.strokeStyle=pine; ctx.lineWidth=1.2; ctx.beginPath(); ctx.rect(tx,ty,tw,17); ctx.fill(); ctx.stroke();
+    archWin(cx-5,ty+14,3,pine); archWin(cx+5,ty+14,3,pine);
+    ctx.fillStyle=roof; ctx.beginPath(); ctx.moveTo(tx-3,ty); ctx.lineTo(cx,ty-13); ctx.lineTo(tx+tw+3,ty); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle=pine; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(cx,ty-13); ctx.lineTo(cx,ty-18); ctx.stroke();
+    // arched central entry
+    ctx.strokeStyle=pine; ctx.lineWidth=1.3;
+    ctx.beginPath(); ctx.moveTo(cx-10,baseY); ctx.lineTo(cx-10,by+18); ctx.arc(cx,by+18,10,Math.PI,0); ctx.lineTo(cx+10,baseY); ctx.stroke();
+    // arched windows along the wings
+    for(var wx=bx+20; wx<cx-22; wx+=20){ archWin(wx, by+36, 6, pine); }
+    for(var wx2=cx+22; wx2<bx+bw-16; wx2+=20){ archWin(wx2, by+36, 6, pine); }
+    // hedge line + receding walkway
+    ctx.strokeStyle=sage; ctx.lineWidth=2; ctx.beginPath();
+    for(var hx=bx-4; hx<=bx+bw+4; hx+=8){ ctx.moveTo(hx,baseY); ctx.quadraticCurveTo(hx+4,baseY-5,hx+8,baseY); }
+    ctx.stroke();
+    ctx.strokeStyle=sage; ctx.lineWidth=1; ctx.beginPath();
+    ctx.moveTo(cx-10,baseY); ctx.lineTo(cx-36,baseY+13); ctx.moveTo(cx+10,baseY); ctx.lineTo(cx+36,baseY+13); ctx.stroke();
+    // work trucks parked out front (the BCCC joke)
+    drawTruck(cx-104, baseY+3, 'bucket', pine);
+    drawTruck(cx-58, baseY+3, 'van', sage);
+    drawTruck(cx+20, baseY+3, 'mixer', sage);
+    drawTruck(cx+66, baseY+3, 'dump', pine);
+    ctx.restore();
+  }
+
+  function drawRange(){
+    // mow stripes (perspective-ish bands)
+    for(var b=0;b<8;b++){
+      var yy=GROUND + b*(H-GROUND)/8;
+      ctx.fillStyle = b%2? 'rgba(255,255,255,.03)':'rgba(0,0,0,.04)';
+      ctx.fillRect(0,yy,W,(H-GROUND)/8+1);
+    }
+    // yard posts every 50
+    ctx.textAlign='center';
+    for(var yd=50; yd<=400; yd+=50){
+      var sx=w2s(yd*PXY);
+      if(sx<-20||sx>W+20) continue;
+      ctx.strokeStyle='rgba(236,227,207,.35)'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(sx,GROUND); ctx.lineTo(sx,GROUND-14); ctx.stroke();
+      ctx.fillStyle='rgba(236,227,207,.6)';
+      ctx.font='12px Cormorant Garamond, serif';
+      ctx.fillText(yd, sx, GROUND-18);
+    }
+  }
+
+  function drawPin(yd){
+    var sx=w2s(yd*PXY);
+    if(sx<-30||sx>W+30) return;
+    // flag pole
+    ctx.strokeStyle='#ece3cf'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(sx,GROUND); ctx.lineTo(sx,GROUND-52); ctx.stroke();
+    // pennant
+    ctx.fillStyle='#b8985a';
+    ctx.beginPath();
+    ctx.moveTo(sx,GROUND-52); ctx.lineTo(sx+26,GROUND-46); ctx.lineTo(sx,GROUND-40);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle='#1b3124'; ctx.font='700 9px Cormorant Garamond, serif'; ctx.textAlign='center';
+    ctx.fillText('BC', sx+9, GROUND-44);
+    // hole
+    ctx.fillStyle='rgba(0,0,0,.35)';
+    ctx.beginPath(); ctx.ellipse(sx,GROUND+1,5,2,0,0,7); ctx.fill();
+  }
+
+  // ---- the hard-hat ironworker golfer (art-directed to the Driver tee) ----
+  function drawGolfer(fx, fy, t){
+    var rad = swingAngle(t)*Math.PI/180;
+
+    ctx.save(); ctx.translate(fx,fy);
+    ctx.lineCap='round'; ctx.lineJoin='round';
+    var shirt='#7d8c6c', shirtD='#566249', shirtL='#8fa07c', pants='#6c795b', pantsD='#4c5640',
+        skin='#bdb892', ink='#14160f', hat='#9aa884', hatD='#6f8064';
+
+    // grounding shadow
+    ctx.fillStyle='rgba(0,0,0,.2)';
+    ctx.beginPath(); ctx.ellipse(0,0,32,5,0,0,7); ctx.fill();
+
+    // legs — wide athletic stance, knees bent, weight forward
+    ctx.strokeStyle=pants; ctx.lineWidth=14;
+    ctx.beginPath(); ctx.moveTo(-5,-50); ctx.lineTo(-22,-24); ctx.lineTo(-18,-3); ctx.stroke();  // back leg
+    ctx.beginPath(); ctx.moveTo(1,-52); ctx.lineTo(16,-27); ctx.lineTo(15,-3); ctx.stroke();      // front leg
+    ctx.strokeStyle=pantsD; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(-12,-42); ctx.lineTo(-19,-22); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(8,-44); ctx.lineTo(13,-24); ctx.stroke();
+    // work boots
+    ctx.strokeStyle=ink; ctx.lineWidth=8;
+    ctx.beginPath(); ctx.moveTo(-18,-3); ctx.lineTo(-27,-2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(15,-3); ctx.lineTo(25,-2); ctx.stroke();
+
+    // torso — broad back, slight lean to target
+    ctx.strokeStyle=shirt; ctx.lineWidth=23;
+    ctx.beginPath(); ctx.moveTo(-5,-52); ctx.lineTo(5,-94); ctx.stroke();
+    // engraved lat/back hatching
+    ctx.strokeStyle=shirtD; ctx.lineWidth=1.4;
+    ctx.beginPath(); ctx.moveTo(-11,-62); ctx.quadraticCurveTo(-9,-78,-7,-88); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-5,-60); ctx.quadraticCurveTo(-3,-78,-1,-90); ctx.stroke();
+    ctx.strokeStyle=shirtL; ctx.lineWidth=1.2;
+    ctx.beginPath(); ctx.moveTo(9,-66); ctx.lineTo(10,-88); ctx.stroke();
+    // belt + buckle
+    ctx.strokeStyle=ink; ctx.lineWidth=5; ctx.beginPath(); ctx.moveTo(-9,-51); ctx.lineTo(5,-53); ctx.stroke();
+    ctx.fillStyle='#b8985a'; ctx.fillRect(-3,-55,5,3);
+
+    var sh={x:5,y:-94};
+
+    // neck + head (profile under brim)
+    ctx.strokeStyle=skin; ctx.lineWidth=8; ctx.beginPath(); ctx.moveTo(5,-93); ctx.lineTo(8,-101); ctx.stroke();
+    ctx.fillStyle=skin; ctx.beginPath(); ctx.arc(9,-102,8.5,0,7); ctx.fill();
+    ctx.strokeStyle='rgba(0,0,0,.2)'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(9,-102,8.5,-0.4,1.0); ctx.stroke();
+
+    // hard hat (bigger) + suspension ridge + Troll "T"
+    ctx.fillStyle=hat; ctx.beginPath(); ctx.arc(9,-106,12,Math.PI,0); ctx.fill();
+    ctx.fillRect(-5,-107,29,4);
+    ctx.fillStyle=hatD; ctx.fillRect(-5,-104,29,1.6);
+    ctx.strokeStyle=hatD; ctx.lineWidth=1.4; ctx.beginPath(); ctx.moveTo(9,-118); ctx.lineTo(9,-107); ctx.stroke();
+    ctx.beginPath(); ctx.arc(9,-106,12,Math.PI,0); ctx.stroke();
+    ctx.fillStyle=ink; ctx.font='700 8px Cormorant Garamond, serif'; ctx.textAlign='center'; ctx.fillText('T',15,-107);
+
+    // arms + club (rigid rig rotating about shoulder)
+    ctx.save(); ctx.translate(sh.x, sh.y); ctx.rotate(rad);
+    ctx.strokeStyle=shirt; ctx.lineWidth=10; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(19,1); ctx.stroke();   // upper arm
+    ctx.strokeStyle=shirtD; ctx.lineWidth=10; ctx.beginPath(); ctx.moveTo(17,1); ctx.lineTo(20,1); ctx.stroke(); // rolled cuff
+    ctx.strokeStyle=skin; ctx.lineWidth=8.5; ctx.beginPath(); ctx.moveTo(20,1); ctx.lineTo(38,2); ctx.stroke();  // forearm
+    ctx.strokeStyle='rgba(0,0,0,.18)'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(24,4); ctx.lineTo(35,4.5); ctx.stroke();
+    ctx.fillStyle=ink; ctx.beginPath(); ctx.arc(39,2,5,0,7); ctx.fill();                                        // gloved hands
+    ctx.strokeStyle=ink; ctx.lineWidth=2.8; ctx.beginPath(); ctx.moveTo(39,2); ctx.lineTo(102,7); ctx.stroke();  // shaft
+    ctx.fillStyle=shirtD; ctx.beginPath(); ctx.ellipse(103,8,6.5,3.6,0.35,0,7); ctx.fill();                      // club head
+    ctx.strokeStyle=ink; ctx.lineWidth=1; ctx.stroke();
+    ctx.restore();
+
+    ctx.restore();
+
+    // tee + ball at address
+    if(state===STATE.ADDRESS || state===STATE.POWER || state===STATE.CONTACT || (state===STATE.SWING && !swingLaunched)){
+      var tx=fx+26;
+      ctx.strokeStyle='#cdbf9c'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(tx,fy); ctx.lineTo(tx,fy-7); ctx.stroke();
+      ctx.fillStyle='#fbf7ec'; ctx.beginPath(); ctx.arc(tx,fy-10,4,0,7); ctx.fill();
+      ctx.strokeStyle='rgba(35,64,47,.5)'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(tx,fy-10,4,0,7); ctx.stroke();
+    }
+  }
+
+  // golf swing arc: address(low front) -> top(up & behind) -> impact(down at ball) -> follow(up front)
+  function swingAngle(t){
+    if(t<=0.5)  return lerp(55, 205, t/0.5);
+    if(t<=0.70) return lerp(205, 82, (t-0.5)/0.20);
+    return lerp(82, -42, (t-0.70)/0.30);
+  }
+
+  function lerp(a,b,t){ return a+(b-a)*t; }
+
+  // ---- meters ----
+  function drawPowerMeter(){
+    var x=W-46, y=70, w=22, h=H-200;
+    panel(x-6,y-26,w+12,h+52);
+    ctx.fillStyle='#1b3124'; ctx.fillRect(x,y,w,h);
+    // fill from bottom
+    var fh=h*power;
+    var grad=ctx.createLinearGradient(0,y+h,0,y);
+    grad.addColorStop(0,'#9aa884'); grad.addColorStop(0.6,'#c7b06e'); grad.addColorStop(1,'#d8946a');
+    ctx.fillStyle=grad; ctx.fillRect(x,y+h-fh,w,fh);
+    ctx.strokeStyle='#ece3cf'; ctx.lineWidth=1; ctx.strokeRect(x,y,w,h);
+    ctx.save(); ctx.translate(x-12,y+h/2); ctx.rotate(-Math.PI/2);
+    ctx.fillStyle='#ece3cf'; ctx.font='600 12px Cormorant Garamond, serif'; ctx.textAlign='center';
+    ctx.fillText('POWER', 0, 0); ctx.restore();
+    drawHint('Tap to set your power');
+  }
+  function drawContactMeter(){
+    var w=W*0.62, x=(W-w)/2, y=H-44, h=18;
+    panel(x-8,y-30,w+16,h+40);
+    ctx.fillStyle='#1b3124'; ctx.fillRect(x,y,w,h);
+    // sweet zone
+    var sw=w*SWEET_W*2, sx=x+w*SWEET-sw/2;
+    var sg=ctx.createLinearGradient(sx,0,sx+sw,0);
+    sg.addColorStop(0,'rgba(184,152,90,.4)'); sg.addColorStop(.5,'#d8b878'); sg.addColorStop(1,'rgba(184,152,90,.4)');
+    ctx.fillStyle=sg; ctx.fillRect(sx,y,sw,h);
+    ctx.strokeStyle='#ece3cf'; ctx.lineWidth=1; ctx.strokeRect(x,y,w,h);
+    // needle
+    var nx=x+w*contact;
+    ctx.strokeStyle='#fbf7ec'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(nx,y-6); ctx.lineTo(nx,y+h+6); ctx.stroke();
+    ctx.fillStyle='#ece3cf'; ctx.font='600 12px Cormorant Garamond, serif'; ctx.textAlign='center';
+    ctx.fillText('CONTACT — hit the gold', x+w/2, y-14);
+  }
+  function panel(x,y,w,h){
+    ctx.fillStyle='rgba(20,38,27,.82)';
+    roundRect(x,y,w,h,5); ctx.fill();
+    ctx.strokeStyle='rgba(184,152,90,.45)'; ctx.lineWidth=1; ctx.stroke();
+  }
+  function drawHint(txt){
+    ctx.fillStyle='rgba(20,38,27,.8)';
+    var tw=ctx.measureText(txt).width;
+    ctx.font='italic 15px Cormorant Garamond, serif';
+    tw=ctx.measureText(txt).width;
+    roundRect(W/2-tw/2-14, 16, tw+28, 28, 14); ctx.fill();
+    ctx.fillStyle='#ece3cf'; ctx.textAlign='center';
+    ctx.fillText(txt, W/2, 35);
+  }
+  function roundRect(x,y,w,h,r){
+    ctx.beginPath(); ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+  }
+
+  // ===================== WEBGL POST-PROCESS =====================
+  function glCompile(type,srcStr){
+    var s=gl.createShader(type); gl.shaderSource(s,srcStr); gl.compileShader(s);
+    if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)){ console.warn('shader:',gl.getShaderInfoLog(s)); return null; }
+    return s;
+  }
+  function glFallback(){
+    useGL=false; inputEl=canvas;
+    glCanvas.style.display='none';
+    var stage=glCanvas.parentNode; if(stage) stage.insertBefore(canvas, glCanvas);
+  }
+  function initGL(){
+    try{ gl = glCanvas.getContext('webgl',{antialias:true,premultipliedAlpha:false}) || glCanvas.getContext('experimental-webgl'); }
+    catch(e){ gl=null; }
+    if(!gl){ return glFallback(); }
+    var vs=glCompile(gl.VERTEX_SHADER,VERT), fs=glCompile(gl.FRAGMENT_SHADER,FRAG);
+    if(!vs||!fs){ return glFallback(); }
+    prog=gl.createProgram(); gl.attachShader(prog,vs); gl.attachShader(prog,fs); gl.linkProgram(prog);
+    if(!gl.getProgramParameter(prog,gl.LINK_STATUS)){ console.warn('link:',gl.getProgramInfoLog(prog)); return glFallback(); }
+    quadBuf=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,quadBuf);
+    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1, 1,-1, -1,1, 1,1]),gl.STATIC_DRAW);
+    aPosLoc=gl.getAttribLocation(prog,'aPos');
+    uTexLoc=gl.getUniformLocation(prog,'uTex');
+    uTimeLoc=gl.getUniformLocation(prog,'uTime');
+    uResLoc=gl.getUniformLocation(prog,'uRes');
+    tex=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D,tex);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+    useGL=true; inputEl=glCanvas;
+  }
+  function postProcess(t){
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,tex);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,canvas);
+    gl.viewport(0,0,glCanvas.width,glCanvas.height);
+    gl.useProgram(prog);
+    gl.bindBuffer(gl.ARRAY_BUFFER,quadBuf);
+    gl.enableVertexAttribArray(aPosLoc);
+    gl.vertexAttribPointer(aPosLoc,2,gl.FLOAT,false,0,0);
+    gl.uniform1i(uTexLoc,0);
+    gl.uniform1f(uTimeLoc,t);
+    gl.uniform2f(uResLoc,W,H);
+    gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+  }
+
+  // ===================== LOOP =====================
+  function frame(now){
+    var dt=(now-last)/1000; last=now; if(dt>0.05) dt=0.05;
+    update(dt); render();
+    if(useGL) postProcess(now/1000);
+    requestAnimationFrame(frame);
+  }
+
+  // ===================== INPUT =====================
+  inputEl.addEventListener('pointerdown', function(e){ e.preventDefault(); tap(); });
+  // overlay taps advance only for the simple prompts (title / result)
+  el.overlay.addEventListener('pointerdown', function(e){
+    if(state===STATE.TITLE || state===STATE.RESULT){ e.preventDefault(); tap(); }
+  });
+  window.addEventListener('keydown', function(e){
+    if(e.key===' '||e.key==='Enter'){ e.preventDefault();
+      if(state===STATE.SUMMARY){ startRound(); } else { tap(); }
+    }
+  });
+
+  el.soundBtn.addEventListener('click', function(){
+    soundOn=!soundOn; el.soundBtn.textContent='Sound: '+(soundOn?'On':'Off');
+    if(soundOn){ try{ if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)(); if(actx.state==='suspended') actx.resume(); tone(520,.06,'sine',.05);}catch(e){} }
+  });
+
+  // ===================== BOOT =====================
+  showTitle();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
