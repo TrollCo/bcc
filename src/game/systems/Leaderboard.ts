@@ -13,9 +13,9 @@ export interface Member {
 export const SEED: Member[] = [
   { nm: 'Big Mike — HVAC', sc: 392 },
   { nm: 'Dwayne — Framer', sc: 358 },
-  { nm: 'Sully — Plumber', sc: 341 },
-  { nm: 'Tig — Welder', sc: 327 },
-  { nm: 'Sparks — Sparky', sc: 309 },
+  { nm: 'Josh — Plumber', sc: 341 },
+  { nm: 'Bodie — Welder', sc: 327 },
+  { nm: 'Jorge — Fabricator', sc: 309 },
   { nm: 'Concrete Carl', sc: 286 },
 ];
 

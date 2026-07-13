@@ -35,16 +35,21 @@ export const SwingMeter = {
     }
   },
 
-  /** Lock power on tap (POWER -> CONTACT). */
+  /** Lock power on tap (POWER -> CONTACT). Near-peak taps snap to a full 1.0 —
+   *  the exact peak lasts a single frame, so without the snap a perfect lock is
+   *  frame luck rather than timing skill. */
   lockPower(s: GameState): void {
-    s.lockedPower = s.power;
+    s.lockedPower = s.power >= TUNING.powerSnap ? 1 : s.power;
   },
 
-  /** Lock contact on tap (CONTACT -> SWING); returns the resulting quality Q. */
+  /** Lock contact on tap (CONTACT -> SWING); returns the resulting quality Q.
+   *  Dead-center within the snap window counts as a pure Q=1.0 strike (an exact
+   *  0.5 is a sub-millisecond frame lottery otherwise). */
   lockContact(s: GameState): number {
     const off = Math.abs(s.contact - TUNING.SWEET);
     let q = Math.max(0, 1 - (off / TUNING.SWEET_W) * TUNING.contactForgiveness);
     q = Math.min(1, q);
+    if (off <= TUNING.contactSnapOff) q = 1;
     s.lockedQ = q;
     return q;
   },

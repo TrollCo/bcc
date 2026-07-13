@@ -1,4 +1,6 @@
 import { Howl, Howler } from 'howler';
+import VO_FILES from 'virtual:vo-manifest';
+import { PURE_GRADE } from './Reward';
 
 /**
  * Audio — a procedural WebAudio SFX engine (synthesized, no asset files needed)
@@ -17,31 +19,72 @@ const VO_SLUG: Record<string, string> = {
   Respectable: 'respectable',
   'Now That’s Clubhouse Talk': 'clubhouse',
   'Absolute Cannon': 'cannon',
-  'PURE — Flushed It': 'pure',
+  [PURE_GRADE]: 'pure',
 };
 
 // Each grade can have multiple announcer takes that shuffle so repeated drives in
 // the same band don't replay the same line. Take 1 is `<slug>.mp3`; add variety by
-// dropping `<slug>-2.mp3`, `<slug>-3.mp3`, … into public/assets/audio/vo/ (probed
-// up to this cap; the first missing index stops nothing — all present takes load).
-const MAX_VO_VARIANTS = 6;
+// dropping `<slug>-2.mp3`, `<slug>-3.mp3`, … into public/assets/audio/vo/ — the
+// list is baked in at BUILD time (virtual:vo-manifest), so the pool is always
+// complete. (The old boot-time URL probing could transiently miss a file on a
+// flaky network, collapsing a grade's pool down to repeats of one clip.)
 
-// Back-to-back variety WITHOUT new recordings: when the same grade fires several
-// times in a row, rotate through these slugs instead of replaying one line. Index
-// 0 is the grade's own line (first hit); each consecutive repeat advances one step
-// and wraps. Neighbors are picked to stay tonally on-brand — bad lines borrow other
-// bad lines, big lines borrow other big lines — so the swap never over/under-praises.
-// The streak resets the moment a different grade is hit (only *consecutive* repeats
-// vary). Reorder/extend any row to taste; every slug here is already recorded.
+// Back-to-back variety: when the same scenario fires several times in a row,
+// rotate through these slugs instead of replaying one line. Index 0 is the
+// grade's own line (first hit); each consecutive repeat advances one step and
+// wraps. The three "bad shot" grades cycle through ALL bad-shot lines (shanked /
+// wormburner / shortgrass share one pool — owner call). The mid/high grades stay
+// in their OWN lane: each has 3-4 recorded takes now, and hearing another
+// grade's line on a good drive read as a mismatch (cross-grade borrowing was a
+// stopgap from the single-take days). Their variety comes from the per-slug
+// take shuffle in playSlug.
 const VO_ROTATION: Record<string, string[]> = {
-  'Shanked It': ['shanked', 'wormburner'],
-  'Worm Burner': ['wormburner', 'shanked'],
-  'On the Short Grass': ['shortgrass', 'wormburner'],
-  Respectable: ['respectable', 'shortgrass'],
-  'Now That’s Clubhouse Talk': ['clubhouse', 'cannon'],
-  'Absolute Cannon': ['cannon', 'clubhouse'],
-  'PURE — Flushed It': ['pure', 'cannon'],
+  'Shanked It': ['shanked', 'wormburner', 'shortgrass'],
+  'Worm Burner': ['wormburner', 'shortgrass', 'shanked'],
+  'On the Short Grass': ['shortgrass', 'wormburner', 'shanked'],
+  Respectable: ['respectable'],
+  'Now That’s Clubhouse Talk': ['clubhouse'],
+  'Absolute Cannon': ['cannon'],
+  [PURE_GRADE]: ['pure'],
 };
+
+// Grades that share a streak: any consecutive run WITHIN the group advances the
+// rotation, even when the exact grade differs (shank -> worm burner -> shank all
+// count as one "bad shot" streak, so the lines keep cycling instead of resetting).
+const VO_STREAK_GROUP: Record<string, string> = {
+  'Shanked It': 'bad-shot',
+  'Worm Burner': 'bad-shot',
+  'On the Short Grass': 'bad-shot',
+};
+
+// NOTE: alternates never open — the FIRST line a session hears for any grade is
+// always the base take (`<slug>.mp3`); see playSlug. This is a structural
+// guarantee (replaces the old per-file "follow-up only" gate): some alternates
+// only read as follow-ups, and a gate keyed to a specific filename is blind to
+// any content/label mix-up at recording or export time.
+
+// Lines that only read as a FOLLOW-UP (they presume an earlier shot in the same
+// bucket): excluded until their grade has already played a line THIS ROUND —
+// so they can never open a session OR a fresh bucket. Currently empty:
+// "Respectable 4" (respectable-3.mp3) was re-recorded 2026-07-06 to stand
+// alone and its gate was lifted. Add filenames here if future takes need it.
+const VO_FOLLOWUP_ONLY: Record<string, string[]> = {};
+
+// Some files are different TAKES of the SAME line (verified by audio
+// cross-correlation, 2026-07-06) — playing two of them in a row sounds like a
+// repeat even though the filenames differ. Files sharing a group id here never
+// play consecutively; files not listed are their own group (all distinct lines).
+const VO_LINE_GROUP: Record<string, string> = {
+  'shanked.mp3': 'shanked-line-1',
+  'shanked-2.mp3': 'shanked-line-1',
+  'wormburner.mp3': 'wormburner-line-1',
+  'wormburner-2.mp3': 'wormburner-line-1',
+  'shortgrass.mp3': 'shortgrass-line-1',
+  'shortgrass-4.mp3': 'shortgrass-line-1',
+  'clubhouse.mp3': 'clubhouse-line-1',
+  'clubhouse-3.mp3': 'clubhouse-line-1',
+};
+const lineGroup = (name: string): string => VO_LINE_GROUP[name] ?? name;
 
 export class Audio {
   soundOn = false;
@@ -50,8 +93,12 @@ export class Audio {
   private noiseBuf: AudioBuffer | null = null;
 
   private ambient: Howl | null = null;
-  private vo = new Map<string, Howl[]>(); // one or more takes per grade (shuffled)
-  private voLast = new Map<string, number>(); // last take index per slug — avoids back-to-back repeats
+  private vo = new Map<string, { howl: Howl; name: string }[]>(); // takes per grade (shuffled)
+  private voLast = new Map<string, string>(); // last take FILENAME per slug — avoids back-to-back
+  // repeats. By name, not index: the probe-retry merge re-orders the takes array,
+  // so a stored index can silently point at a different file after a merge.
+  private voPlayed = new Set<string>(); // slugs heard this session — first play is the base take
+  private voPlayedRound = new Set<string>(); // slugs heard this ROUND — gates VO_FOLLOWUP_ONLY lines
   private lastVoGrade = ''; // grade of the previous shot — detects consecutive repeats
   private voStreak = 0; // consecutive count of the current grade — indexes VO_ROTATION
   private sfxClips = new Map<string, Howl>(); // crowd reactions (clap/cheer)
@@ -214,9 +261,10 @@ export class Audio {
       this.ambient = new Howl({ src: [`${this.base}assets/audio/ambient-loop.mp3`], loop: true, volume: 0.25 });
       if (this.soundOn) this.startAmbient();
     });
-    // announcer VO clips (each grade may have several takes that shuffle)
+    // announcer VO clips (each grade may have several takes that shuffle) — from
+    // the build-time manifest, so every take registers instantly and completely
     for (const slug of new Set(Object.values(VO_SLUG))) {
-      void this.loadVoVariants(slug);
+      this.loadVoVariants(slug);
     }
     // crowd reactions: polite golf clap (300+) and full cheer (340+)
     for (const s of ['clap', 'cheer'] as const) {
@@ -236,18 +284,14 @@ export class Audio {
     if (this.soundOn) this.sfxClips.get('cheer')?.play();
   }
 
-  /** Load every announcer take for a grade: `<slug>.mp3` plus any `<slug>-2.mp3`,
-   *  `<slug>-3.mp3` … that exist (up to MAX_VO_VARIANTS). They probe in parallel;
-   *  whichever are present load and become the shuffle pool for that grade. */
-  private async loadVoVariants(slug: string): Promise<void> {
-    const names = [`${slug}.mp3`];
-    for (let i = 2; i <= MAX_VO_VARIANTS; i++) names.push(`${slug}-${i}.mp3`);
-    const present = await Promise.all(
-      names.map((name) => this.exists(`${this.base}assets/audio/vo/${name}`).then((ok) => (ok ? name : null))),
-    );
-    const takes = present
-      .filter((n): n is string => n !== null)
-      .map((name) => new Howl({ src: [`${this.base}assets/audio/vo/${name}`], volume: 0.55 }));
+  /** Register every announcer take for a grade from the build-time manifest:
+   *  `<slug>.mp3` plus any `<slug>-2.mp3`, `<slug>-3.mp3`, … No network probing —
+   *  the manifest is the complete truth, so the pool can never silently degrade. */
+  private loadVoVariants(slug: string): void {
+    const takes = VO_FILES.filter((f) => f === `${slug}.mp3` || f.startsWith(`${slug}-`)).map((name) => ({
+      name,
+      howl: new Howl({ src: [`${this.base}assets/audio/vo/${name}`], volume: 0.55 }),
+    }));
     if (takes.length) this.vo.set(slug, takes);
   }
 
@@ -265,34 +309,56 @@ export class Audio {
   }
 
   /** Play an announcer line for a grade bucket. Consecutive repeats of the same
-   *  grade rotate through VO_ROTATION (a 2nd shank borrows the worm-burner line,
-   *  etc.) so a player stuck in one band doesn't hear the identical clip looping.
-   *  The streak resets when a different grade is hit. */
+   *  scenario rotate through VO_ROTATION (a 2nd shank borrows the worm-burner
+   *  line, etc.) so a player stuck in one band doesn't hear the identical clip
+   *  looping. Grades in the same VO_STREAK_GROUP share one streak — any run of
+   *  bad shots keeps the cycle advancing even as the exact grade varies. The
+   *  streak resets when a grade outside the group is hit. */
   playVo(grade: string): void {
     if (!this.soundOn) return;
     const rotation = VO_ROTATION[grade] ?? (VO_SLUG[grade] ? [VO_SLUG[grade]] : null);
     if (!rotation) return;
-    if (grade === this.lastVoGrade) this.voStreak++;
+    const key = VO_STREAK_GROUP[grade] ?? grade;
+    if (key === this.lastVoGrade) this.voStreak++;
     else {
-      this.lastVoGrade = grade;
+      this.lastVoGrade = key;
       this.voStreak = 0;
     }
     this.playSlug(rotation[this.voStreak % rotation.length]);
   }
 
-  /** Play one take for a slug; with multiple takes loaded, picks at random but
-   *  never the same take twice in a row. */
+  /** A fresh bucket started — follow-up-only lines are gated again until their
+   *  grade has spoken this round. */
+  newRound(): void {
+    this.voPlayedRound.clear();
+  }
+
+  /** Play one take for a slug. Rules, in precedence order:
+   *  1. First play of a SESSION is always the base take (`<slug>.mp3`) —
+   *     alternates can never open, no matter how the files are labeled.
+   *  2. VO_FOLLOWUP_ONLY lines can't play until their grade has spoken this
+   *     ROUND (they presume an earlier shot in the bucket). This outranks the
+   *     no-repeat rule — repeating a line beats leaking a follow-up opener.
+   *  3. Otherwise shuffle, never following a take with another take of the same
+   *     LINE (VO_LINE_GROUP — two deliveries of one joke read as a repeat). */
   private playSlug(slug: string): void {
     const takes = this.vo.get(slug);
     if (!takes || !takes.length) return;
-    let i = 0;
-    if (takes.length > 1) {
-      const last = this.voLast.get(slug) ?? -1;
-      do {
-        i = Math.floor(Math.random() * takes.length);
-      } while (i === last);
+    const gated = this.voPlayedRound.has(slug) ? [] : (VO_FOLLOWUP_ONLY[slug] ?? []);
+    let eligible = takes.filter((t) => !gated.includes(t.name));
+    if (!eligible.length) eligible = takes; // safety: never end up empty
+    let pick: { name: string; howl: Howl };
+    if (!this.voPlayed.has(slug)) {
+      pick = eligible.find((t) => t.name === `${slug}.mp3`) ?? eligible[0];
+    } else {
+      const last = this.voLast.get(slug);
+      let pool = last === undefined ? eligible : eligible.filter((t) => lineGroup(t.name) !== lineGroup(last));
+      if (!pool.length) pool = eligible; // repeat a line rather than leak a gated follow-up
+      pick = pool[Math.floor(Math.random() * pool.length)];
     }
-    this.voLast.set(slug, i);
-    takes[i].play();
+    this.voLast.set(slug, pick.name);
+    this.voPlayed.add(slug);
+    this.voPlayedRound.add(slug);
+    pick.howl.play();
   }
 }

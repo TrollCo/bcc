@@ -7,7 +7,7 @@ import { SwingMeter } from './systems/SwingMeter';
 import { Physics } from './systems/Physics';
 import { Camera } from './systems/Camera';
 import { Particles } from './systems/Particles';
-import { Reward } from './systems/Reward';
+import { Reward, PURE_GRADE } from './systems/Reward';
 import { Audio } from './systems/Audio';
 import { Haptics } from './systems/Haptics';
 import { track } from './systems/Analytics';
@@ -143,6 +143,7 @@ export class Game {
     s.bestDrive = 0;
     s.totalYds = 0;
     s.shots = [];
+    this.audio.newRound(); // follow-up-only VO lines can't open a fresh bucket
     track('bccc_game_start');
     this.updateStats();
     this.nextBall();
@@ -240,7 +241,7 @@ export class Game {
     s.shots.push({ xpx: s.ball.totalPx, yd: s.resultYd });
     this.updateStats();
     this.showResult();
-    const pure = s.resultGrade.startsWith('PURE');
+    const pure = s.resultGrade === PURE_GRADE;
     if (s.resultYd >= TUNING.MEMBER_THRESHOLD || pure) {
       this.audio.chime();
       Haptics.celebrate();

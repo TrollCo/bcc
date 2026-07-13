@@ -2,6 +2,7 @@ import { TUNING } from '../../config/tuning';
 import { buildBoard, type Member } from '../systems/Leaderboard';
 import { claimMembership, fetchLeaderboard, type ClaimFn } from '../systems/Backend';
 import { track } from '../systems/Analytics';
+import { PURE_GRADE } from '../systems/Reward';
 import { shareDrive } from './ShareCard';
 import type { Audio } from '../systems/Audio';
 import type { GameState } from '../state';
@@ -112,7 +113,7 @@ export class Overlay {
 
   showResult(s: GameState): void {
     const last = s.ballIndex + 1 >= TUNING.BALLS_PER_ROUND;
-    const pure = s.resultGrade.startsWith('PURE');
+    const pure = s.resultGrade === PURE_GRADE;
     this.show(
       `<div class="ov-grade${pure ? ' pure' : ''}">${s.resultGrade}</div>` +
         `<div class="ov-dist">${Math.round(s.resultYd)}<span class="yd"> YD</span></div>` +
@@ -138,19 +139,18 @@ export class Overlay {
     const head = earned
       ? '<div class="ov-grade">Membership Granted</div>'
       : '<div class="ov-grade" style="color:var(--bone)">Round Complete</div>';
-    const share = s.bestDrive > 0 ? '<button class="btn share" id="shareBtn">Text it to a friend</button>' : '';
-    const shareHint = s.bestDrive > 0
-      ? '<div class="share-hint">When a friend plays your link, you BOTH get an extra 5% off the drop.</div>'
-      : '';
 
     let body: string;
     if (earned) {
+      // Membership page: focused on the reward. No "text a friend for another
+      // bucket" CTA here — a member already cleared the bar; that CTA lives only
+      // on the miss branch below.
       track('bccc_membership_unlocked', { bestDrive: s.bestDrive });
       body =
         '<div class="card">' +
         '<div class="ribbon">Member in Good Standing</div>' +
         '<div class="sub">Blue Collar Country Club &middot; Est.&nbsp;2017</div>' +
-        '<div class="perk">15% Off + Early Access to BCCC.</div>' +
+        '<div class="perk">Early Access to BCCC + Free Gift with Purchase.</div>' +
         '<div class="code" id="codeBox">— — — —</div>' +
         '<div class="claim">' +
         '<input id="emailIn" type="email" placeholder="Email to claim your card" />' +
@@ -160,19 +160,24 @@ export class Overlay {
         '<div class="members" id="standings"><h4>Member Standings</h4>' +
         rows +
         '</div>' +
-        `<div class="sum-actions">${share}</div>` +
-        shareHint +
         '<div class="prompt" id="again" style="margin-top:10px">Play another round</div>';
     } else {
-      // near-miss pressure: when they're within striking distance, the replay CTA
-      // names the gap — "4 yards short — one more bucket?"
+      // Miss branch: near-miss pressure (the replay CTA names the gap) + the
+      // "text a friend to hit another bucket" share CTA.
+      const share = s.bestDrive > 0 ? '<button class="btn share" id="shareBtn">Text it to a friend</button>' : '';
+      const shareHint = s.bestDrive > 0
+        ? '<div class="share-hint">Didn’t bring your A game? Text a friend to hit another bucket of range balls.</div>'
+        : '';
       const short = TUNING.MEMBER_THRESHOLD - s.bestDrive;
-      const cta = short <= 25 ? `${short} yards short — one more bucket?` : 'Hit another bucket';
+      // Non-clickable tease (NOT a replay CTA): another bucket is earned by
+      // texting a friend, not a free replay. Kept as an inert label — the dev
+      // wires the referral -> extra-bucket fulfillment (HANDOFF §5).
+      const tag = `${short} yards short — one more bucket?`;
       body =
         `<div class="ov-dist" style="font-size:clamp(40px,11vw,64px)">${s.bestDrive}<span class="yd"> YD BEST</span></div>` +
         `<div class="ov-line" style="margin-top:8px">${short} yards short of a membership. The driving range is open 24/7.</div>` +
         `<div class="members" id="standings" style="margin-top:14px"><h4>Member Standings</h4>${rows}</div>` +
-        `<div class="sum-actions"><button class="btn" id="again">${cta}</button>${share}</div>` +
+        `<div class="sum-actions"><div class="miss-tag" aria-disabled="true">${tag}</div>${share}</div>` +
         shareHint;
     }
 

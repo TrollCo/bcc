@@ -9,15 +9,18 @@ function randomCode(): string {
 }
 
 /**
- * Get a single-use discount code for this claim. Three modes:
- *  - MOCK (no creds): a locally-minted fake code (dev/demo).
- *  - Pattern A (pool): hand out the next unused pre-generated Shopify code.
- *  - Pattern B (Admin API): mint a unique code under the parent price rule
- *    (15% off, usage_limit 1, scoped to the BCCC collection — configured on the rule).
- * Returns null if the pool is exhausted so the caller can respond gracefully.
+ * Get the membership discount code for this claim.
+ *
+ * NOTE (2026-07): the drop switched to a UNIVERSAL code — one shared code
+ * (`cfg.code`, default FREESTROKES) sent to everyone, matching the client's
+ * MEMBERSHIP_CODE. Mock mode returns it, and that's the intended live behavior
+ * too: configure ONE Shopify discount of that value (Free Gift w/ Purchase) and
+ * return `cfg.code`. The per-user Pattern A (pool) / Pattern B (mint) paths below
+ * are the LEGACY single-use model, kept for reference — remove them if you don't
+ * revert to per-user codes. `randomCode()` stays only for those legacy paths.
  */
 export async function issueCode(cfg: Config, store: Store): Promise<string | null> {
-  if (cfg.mock) return randomCode();
+  if (cfg.mock) return cfg.code;
 
   // Pattern A — pre-generated pool
   if (cfg.shopify.codePool && cfg.shopify.codePool.length) {

@@ -104,6 +104,12 @@ body{height:100%;
 .btn.share{background:none;border:1px solid var(--gold);color:var(--gold-bright);}
 .btn.share:hover{background:rgba(184,152,90,.16);}
 .btn.share:disabled{opacity:.5;cursor:default;}
+/* inert tease on the miss screen — NOT a button: dashed + muted, no pointer */
+.miss-tag{
+  font-family:'Cormorant Garamond';font-weight:600;font-size:14px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--sage);background:none;border:1px dashed rgba(122,138,110,.45);border-radius:4px;
+  padding:9px 14px;cursor:default;pointer-events:none;user-select:none;
+}
 /* "How to play" link on the title + the one-time coach card */
 .howto{margin-top:12px;background:none;border:none;cursor:pointer;color:var(--sage);
   font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-size:clamp(12px,1.6cqw,15px);

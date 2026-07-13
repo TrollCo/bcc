@@ -1,5 +1,9 @@
-import { Reward } from './Reward';
 import type { Member } from './Leaderboard';
+
+// Universal membership code — one shared code sent to everyone (not per-player
+// single-use). Configure a matching Shopify discount when the backend goes live;
+// see HANDOFF.md §5. This client fallback reveals it directly on a static deploy.
+export const MEMBERSHIP_CODE = 'FREESTROKES';
 
 /**
  * Backend seam (bccc-backend-spec.md §1-3). The client calls a real API when one
@@ -55,8 +59,8 @@ const localCode = (status: number): ClaimResponse => ({
   // lead-magnet fallback (NOT a security boundary) — keeps the demo working when
   // there's no backend (static host → /api/* 404s) or it's unreachable (offline)
   ok: true,
-  code: Reward.newCode(),
-  perk: '15% off + early access',
+  code: MEMBERSHIP_CODE,
+  perk: 'Early Access + Free Gift with Purchase',
   status,
 });
 

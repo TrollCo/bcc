@@ -2,20 +2,18 @@ import { TUNING } from '../../config/tuning';
 import type { GameState } from '../state';
 
 /**
+ * Top-tier grade string. Single source of truth: it's the on-screen label AND
+ * the key for the PURE gold-stamp / celebration / VO lookups (Overlay, Game,
+ * Audio) — change the text here and everything follows.
+ */
+export const PURE_GRADE = 'Nuked It!';
+
+/**
  * Reward + grading. The announcer grade buckets are ported verbatim from the
- * prototype's gradeShot(). `newCode()` is the client-side placeholder reveal —
- * Phase 2 replaces it with a server-minted single-use Shopify code gated behind
- * email capture (bccc-backend-spec.md §1-2).
+ * prototype's gradeShot(). The membership code is now a single universal code
+ * (MEMBERSHIP_CODE in Backend.ts) rather than a per-player mint.
  */
 export const Reward = {
-  /** Client-side placeholder promo code. NOT a real code — see backend spec §0. */
-  newCode(): string {
-    let c = 'BCCC-';
-    const a = 'ACDEFGHJKLMNPRTUVWXY3479';
-    for (let i = 0; i < 4; i++) c += a[Math.floor(Math.random() * a.length)];
-    return c;
-  },
-
   /** Deadpan club-announcer grade. Maps (yards, Q) -> grade + line. */
   gradeShot(s: GameState, yd: number, Q: number): void {
     if (Q < 0.32) {
@@ -37,9 +35,11 @@ export const Reward = {
       s.resultGrade = 'Worm Burner';
       s.resultLine = '“It went forward. We’re calling that a positive.”';
     }
-    // PURE is the pinnacle: an elite strike AND a genuinely big drive. Gating on
-    // distance too (not just contact Q) stops a flushed-but-low-power swing from
-    // reading "PURE" at mediocre yardage (e.g. a perfect strike that only carried 252).
-    if (Q >= 0.97 && yd >= TUNING.MEMBER_THRESHOLD) s.resultGrade = 'PURE — Flushed It';
+    // PURE is the top DISTANCE tier: any 340+ bomb (owner calls 2026-07-06 — a
+    // 343 with slightly-off contact graded Cannon while the crowd roared; the
+    // hidden Q gate made the peak moments mismatch). PURE and the crowd roar
+    // now always land together. No Q check: a sub-0.32 strike can't physically
+    // reach 340 (max ~240), so the shank guard above already covers it.
+    if (yd >= TUNING.CHEER_THRESHOLD) s.resultGrade = PURE_GRADE;
   },
 };

@@ -105,8 +105,8 @@ export class Range {
       g.circle(sx, GROUND + 4, 2.5).fill({ color: 0xece3cf, alpha: 0.55 });
     }
 
-    // pin + pennant (decorative; a touch short of MEMBER_THRESHOLD to sit beside
-    // the TAP cue, not under it)
+    // pin + pennant (decorative; beyond the max drive and outside the address
+    // frame — the camera chase brings it into view during flight)
     this.drawPin(g, s, TUNING.PIN_MARKER_YD);
 
     // divot / landing puffs

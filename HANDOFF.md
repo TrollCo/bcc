@@ -108,8 +108,18 @@ Everything front-end is done. To actually capture leads and issue real codes, de
 the API in `/server` and point the game at it. It's already written and spec'd.
 
 **What it does** (`server/README.md`, `reference/bccc-backend-spec.md`):
-- `POST /api/bccc/claim` — email → Klaviyo upsert/subscribe → single-use Shopify code (dedup one per email, per-IP rate limit).
+- `POST /api/bccc/claim` — email → Klaviyo upsert/subscribe → returns the membership code (per-IP rate limit).
 - `POST /api/bccc/score` and `GET /api/bccc/leaderboard` — persistent Members board.
+
+> **Code model changed to UNIVERSAL (2026-07):** the perk is now **Early Access +
+> Free Gift with Purchase**, redeemed with **one shared code for everyone**
+> (`MEMBERSHIP_CODE` in `src/game/systems/Backend.ts`, currently `FREESTROKES`) —
+> NOT the per-email single-use mint the spec/`/server` still describe. For the live
+> backend, create **one Shopify discount** matching that value (uncapped/high-limit)
+> instead of a `SHOPIFY_CODE_POOL` mint, and have `/claim` return it. The spec's
+> single-use dedup logic no longer applies to code issuance (the email gate + rate
+> limit still matter for Klaviyo capture). Change the code string in `Backend.ts`
+> (client) and the Shopify discount together.
 
 **Steps:**
 1. Deploy `/server` as a serverless function (Vercel/Netlify adapter notes in `server/README.md`) or standalone Node (`node --import tsx server/node.ts`).

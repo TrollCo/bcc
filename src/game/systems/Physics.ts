@@ -44,10 +44,23 @@ export const Physics = {
         b.p = 1;
         b.rolling = true;
         b.rollT = 0;
-        b.rollDur = TUNING.rollDurBase + (b.totalPx - b.carryPx) / TUNING.rollDurDiv;
+        // roll duration chosen so the roll BEGINS at exactly the landing speed:
+        // the quadratic ease-out below starts at slope 2/rollDur, so solving
+        // 2*rollPx/rollDur = vLand makes flight -> roll one continuous motion
+        // (no seam/catch at touchdown). Clamped so duffs still settle briskly.
+        const vLand = (b.carryPx * (1 - TUNING.carryEaseMix)) / b.Tc;
+        const rollPx = b.totalPx - b.carryPx;
+        b.rollDur = Math.min(1.4, Math.max(0.35, (2 * rollPx) / Math.max(1, vLand)));
         onCarryEnd();
       }
-      b.x = b.carryPx * b.p;
+      // horizontal ease: hot off the face, decelerating through flight (drag).
+      // Height stays parameterized on time (p), so the eased DISTANCE pushes the
+      // apex forward and steepens the descent — a real drive's shape. The carry
+      // distance/duration (and so the distance model) are unchanged.
+      const e =
+        TUNING.carryEaseMix * (1 - Math.pow(1 - b.p, TUNING.carryEasePow)) +
+        (1 - TUNING.carryEaseMix) * b.p;
+      b.x = b.carryPx * e;
       const h = 4 * b.apex * b.p * (1 - b.p); // parabolic carry arc
       b.y = GROUND - h;
       b.trail.push({ x: b.x, y: b.y });
