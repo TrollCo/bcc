@@ -54,7 +54,7 @@ export class Overlay {
       CREST +
         `<img class="ov-lockup" src="${import.meta.env.BASE_URL}assets/art/bccc-lockup.png" alt="Blue Collar Country Club" />` +
         '<div class="ov-rule"></div>' +
-        `<div class="ov-line">Three balls. One reputation.<br>Smash a drive past ${TUNING.MEMBER_THRESHOLD} yards and the club<br>makes it official.</div>` +
+        `<div class="ov-line">Three balls. One reputation.<br>Drive It ${TUNING.MEMBER_THRESHOLD} Yards to Unlock a <strong>Free Gift with Purchase</strong>.</div>` +
         '<div class="handed" id="handed">' +
         '<span class="handed-lbl">Your swing</span>' +
         `<button class="handed-opt${s.handed === 'L' ? ' on' : ''}" data-h="L">Lefty</button>` +
