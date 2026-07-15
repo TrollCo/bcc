@@ -40,8 +40,6 @@ interface Member { nm: string; sc: number; you?: boolean; }
 interface Store {
   getCodeForEmail(email: string): Promise<string | null>;
   setCodeForEmail(email: string, code: string): Promise<void>;
-  takePoolCode(): Promise<string | null>;
-  loadPool(codes: string[]): Promise<void>;
   hitRateLimit(ip: string, perMin: number): Promise<boolean>;
   addScore(m: Member): Promise<void>;
   topScores(limit: number): Promise<Member[]>;
@@ -49,15 +47,11 @@ interface Store {
 
 function createMemoryStore(): Store {
   const emailToCode = new Map<string, string>();
-  const pool: string[] = [];
-  let poolLoaded = false;
   const ipHits = new Map<string, number[]>();
   const scores: Member[] = [];
   return {
     async getCodeForEmail(email) { return emailToCode.get(email.toLowerCase()) ?? null; },
     async setCodeForEmail(email, code) { emailToCode.set(email.toLowerCase(), code); },
-    async loadPool(codes) { if (poolLoaded) return; pool.push(...codes); poolLoaded = true; },
-    async takePoolCode() { return pool.shift() ?? null; },
     async hitRateLimit(ip, perMin) {
       const now = Date.now();
       const win = now - 60_000;
@@ -129,38 +123,9 @@ async function upsertAndSubscribe(
   }
 }
 
-// ---------- shopify ----------
-const ALPHABET = 'ACDEFGHJKLMNPRTUVWXY3479';
-function randomCode(): string {
-  let c = 'BCCC-';
-  for (let i = 0; i < 4; i++) c += ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
-  return c;
-}
-
-async function issueCode(cfg: Config, store: Store): Promise<string | null> {
-  if (cfg.mock) return cfg.code;
-  if (cfg.shopify.codePool && cfg.shopify.codePool.length) {
-    await store.loadPool(cfg.shopify.codePool);
-    return store.takePoolCode();
-  }
-  if (cfg.shopify.shop && cfg.shopify.adminToken && cfg.shopify.priceRuleId) {
-    const code = randomCode();
-    try {
-      const res = await fetch(
-        `https://${cfg.shopify.shop}/admin/api/2025-01/price_rules/${cfg.shopify.priceRuleId}/discount_codes.json`,
-        {
-          method: 'POST',
-          headers: { 'X-Shopify-Access-Token': cfg.shopify.adminToken, 'content-type': 'application/json' },
-          body: JSON.stringify({ discount_code: { code } }),
-        },
-      );
-      if (res.ok) return code;
-      return null;
-    } catch {
-      return null;
-    }
-  }
-  return randomCode();
+// ---------- code issuance: universal code, always ----------
+async function issueCode(cfg: Config): Promise<string> {
+  return cfg.code;
 }
 
 // ---------- api handler ----------
@@ -190,8 +155,7 @@ async function handle(method: string, path: string, body: unknown, ip: string) {
     }
     const refBy = clean(b.refBy, 40) || undefined;
     await upsertAndSubscribe(config, email, { bestDrive, member: true, refBy });
-    const code = await issueCode(config, store);
-    if (!code) return { status: 503, json: { ok: false, error: 'out_of_codes' } };
+    const code = await issueCode(config);
     await store.setCodeForEmail(email, code);
     return { status: 200, json: { ok: true, code, perk: config.perk } };
   }
