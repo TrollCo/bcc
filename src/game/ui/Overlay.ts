@@ -150,7 +150,7 @@ export class Overlay {
         '<div class="card">' +
         '<div class="ribbon">Member in Good Standing</div>' +
         '<div class="sub">Blue Collar Country Club &middot; Est.&nbsp;2017</div>' +
-        '<div class="perk">Early Access to BCCC + Free Gift with Purchase.</div>' +
+        '<div class="perk">Nice Shot! You Won a Free Gift with Purchase.</div>' +
         '<div class="code" id="codeBox">— — — —</div>' +
         '<div class="claim">' +
         '<input id="emailIn" type="email" placeholder="Email to claim your card" />' +
