@@ -6,7 +6,7 @@
  */
 export const TUNING = {
   // ---- reward gate ----
-  MEMBER_THRESHOLD: 300, // yards for a single drive to earn membership
+  MEMBER_THRESHOLD: 1, // yards for a single drive to earn membership
   CHEER_THRESHOLD: 340, // yards for the full crowd roar (clap plays at 300+)
   BALLS_PER_ROUND: 3,
   // Decorative pin marker position. Placed BEYOND the max drive (358) and outside
